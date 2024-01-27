@@ -2,10 +2,6 @@
 #include "zcs.h"
 #include "multicast.h"
 
-// DEFAULT PORT NUMBERS : 
-#define SRC_PORT : 16000
-#define DEST_PORT : 16001
-
 int zcs_init() {
     // TODO : What ports to use?
     mcast_t *m multicast_init("224.1.1.1", 10000, 10001);

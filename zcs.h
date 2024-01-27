@@ -8,6 +8,16 @@ typedef struct {
 
 typedef void (*zcs_cb_f)(char *, char *);
 
+typedef struct {
+	int pid;	// for threads?
+	bool is_app;
+	zcs_attribute_t attributes;
+} zcs_node_t;
+
+// DEFAULT PORT NUMBERS:
+#define SERVER_PORT 16000	// changed this from SOURCE
+#define APP_PORT 16001		// changed this from DESTINATION, per our meeting
+
 int zcs_init();
 int zcs_start(char *name, zcs_attribute_t attr[], int num);
 int zcs_post_ad(char *ad_name, char *ad_value);

@@ -7,7 +7,10 @@
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT 14500
 #define ZCS_ADDR "224.1.1.1"
+
 #define MAX_NAME_LEN 64
+#define MAX_AD_DURATION 10 // in seconds
+#define MAX_AD_ATTEMPTS 3 // number of attempts to send an ad
 
 typedef struct {
     char name[MAX_NAME_LEN];
@@ -50,9 +53,7 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         return -1;
     }
     strcpy(zcs_node.name, name);
-    // TODO : is this necessary?
-    // Ensure that the string is null-terminated. 
-    zcs_node.name[sizeof(zcs_node.name) - 1] = '\0';
+    // TODO : should we add a NULL character at the end? 
 
     // Allocate the memory necessary for the attributes
     zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
@@ -63,6 +64,30 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         zcs_node.attributes[i] = attr[i];
     }
     zcs_node.num_attributes = num;
+}
+
+/**
+ * @brief Puts the node offline
+ * @return number of times the ad was posted, 0 on failure (no posting)
+*/
+int zcs_post_ad(char *ad_name, char *ad_value) {
+    // check if node was started
+    if (zcs_node.mcast == NULL) { 
+        perror("zcs_post_ad: node not started yet");
+        return -1; 
+    }
+    // Post ad to the multicast group
+    // Ad should be posted MAX_AD_ATTEMPTS times over MAX_AD_DURATION seconds
+    int attempts = 0;
+    int duration = 0;
+    while (duration < MAX_AD_DURATION) {
+        multicast_send(zcs_node.mcast, ad_name, strlen(ad_name));
+        multicast_send(zcs_node.mcast, ad_value, strlen(ad_value));
+        attempts++;
+        duration++;
+        sleep(1);
+    }
+
 }
 
 int zcs_shutdown() {

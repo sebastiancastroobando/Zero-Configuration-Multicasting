@@ -9,32 +9,46 @@
 #define ZCS_ADDR "224.1.1.1"
 
 typedef struct {
-    char name[64];
     zcs_attribute_t *attributes;
+    mcast_t *mcast;
     int num_attributes;
     int isOnline;
 } zcs_node_t;
+
+// Node object
+static zcs_node_t zcs_node; 
 
 /**
  * @brief Setup the parameters and initializations of necesasry components
  * @return 0 on success, -1 on failure
 */
 int zcs_init() {
-    // Multithreading here?
     // Initialize multicast
     mcast_t *m = multicast_init(ZCS_ADDR, ZCS_PORT, ZCS_PORT);
     if (m == NULL) { return -1;}
+    zcs_node.mcast = m; // save the multicast object to the node object
+    zcs_node.isOnline = 1; // set the node to offline
     return 0;
 }
 
 /**
  * @brief Puts the node online
- * @param name node name (ASCII, NULL terminated)
- * @param attr key-value pairs, attributes of the node
- * @param num number of attributes
- * @return 0 if node start successfully, -1 if start before init
+ * @return 0 on success, -1 on failure
 */
 int zcs_start(char *name, zcs_attribute_t attr[], int num) {
-    // check if init is called
+    // check if init was called
+    if (zcs_node.mcast == NULL) { 
+        perror("zcs_start: init not called yet");
+        return -1; 
+    }
 
+    // Allocate the memory necessary for the attributes
+    zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
+
+    // Copy the attributes to the node object
+    // TODO : should we use memcopy?
+    for (int i = 0; i < num; i++) {
+        zcs_node.attributes[i] = attr[i];
+    }
+    zcs_node.num_attributes = num;
 }

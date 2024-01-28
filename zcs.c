@@ -7,8 +7,10 @@
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT 14500
 #define ZCS_ADDR "224.1.1.1"
+#define MAX_NAME_LEN 64
 
 typedef struct {
+    char name[MAX_NAME_LEN];
     zcs_attribute_t *attributes;
     mcast_t *mcast;
     int num_attributes;
@@ -42,6 +44,16 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         return -1; 
     }
 
+    // Copy name to the node object
+    if (strlen(name) > MAX_NAME_LEN) {
+        perror("zcs_start: node name too long");
+        return -1;
+    }
+    strcpy(zcs_node.name, name);
+    // TODO : is this necessary?
+    // Ensure that the string is null-terminated. 
+    zcs_node.name[sizeof(zcs_node.name) - 1] = '\0';
+
     // Allocate the memory necessary for the attributes
     zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
 
@@ -51,4 +63,14 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         zcs_node.attributes[i] = attr[i];
     }
     zcs_node.num_attributes = num;
+}
+
+int zcs_shutdown() {
+    // free the memory allocated for the attributes
+    free(zcs_node.attributes);
+    // free the memory allocated for the multicast object
+    multicast_destroy(zcs_node.mcast);
+    // set the node to offline
+    zcs_node.isOnline = 0;
+    return 0;
 }

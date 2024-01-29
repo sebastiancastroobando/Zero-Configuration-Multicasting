@@ -78,15 +78,29 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
     }
     // Post ad to the multicast group
     // Ad should be posted MAX_AD_ATTEMPTS times over MAX_AD_DURATION seconds
+    // For now, we will just implement a loose version of this
     int attempts = 0;
     int duration = 0;
     while (duration < MAX_AD_DURATION) {
+        // should we send two messages or one? If one, how do we parse it?
         multicast_send(zcs_node.mcast, ad_name, strlen(ad_name));
         multicast_send(zcs_node.mcast, ad_value, strlen(ad_value));
         attempts++;
         duration++;
         sleep(1);
     }
+    return attempts;
+
+}
+
+int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
+    // TODO
+}
+
+/**
+ * @brief get full list of attributes of a node that is return by a query
+*/
+int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 
 }
 
@@ -99,3 +113,5 @@ int zcs_shutdown() {
     zcs_node.isOnline = 0;
     return 0;
 }
+
+// TODO log function

@@ -13,6 +13,7 @@
 #define MAX_NAME_LEN 64
 #define MAX_AD_DURATION 10 // in seconds
 #define MAX_AD_ATTEMPTS 3 // number of attempts to send an ad
+#define HEARTBEAT_INTERVAL 1 // in seconds
 
 typedef struct {
     char name[MAX_NAME_LEN];
@@ -32,7 +33,18 @@ void* discovery(void* arg) {
     char discvoery_buffer[100];
     while(1) {
         // now we need to wait for a response
+        // what happens if we receive two messages at the same time? 
         multicast_receive(zcs_node.mcast, discvoery_buffer, 100);
+    }
+}
+
+void* heartbeat(void* arg) {
+    // TODO
+    while(1) {
+        // send a heartbeat to the multicast group
+        // need to encode who is sending the notification
+        multicast_send(zcs_node.mcast, "HEARTBEAT", strlen("HEARTBEAT"));
+        sleep(HEARTBEAT_INTERVAL);
     }
 }
 
@@ -79,14 +91,15 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
 
     // Copy the attributes to the node object
-    // TODO : should we use memcopy?
-    for (int i = 0; i < num; i++) {
-        zcs_node.attributes[i] = attr[i];
-    }
+    memcpy(zcs_node.attributes, attr, num * sizeof(zcs_attribute_t));
     zcs_node.num_attributes = num;
 
     // Send notification to the multicast group
-
+    pthread_t heartbeatThread;
+    if (pthread_create(&heartbeatThread, NULL, &heartbeat, NULL) != 0) {
+        perror("zcs_start: pthread_create");
+        return -1;
+    }
 }
 
 /**

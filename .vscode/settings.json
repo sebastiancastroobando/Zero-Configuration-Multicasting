@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "multicast.h": "c",
+        "zcs.h": "c"
+    }
+}

@@ -1,5 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <pthread.h>
 
 #include "multicast.h"
 #include "zcs.h"
@@ -23,6 +25,17 @@ typedef struct {
 // Node object
 static zcs_node_t zcs_node; 
 
+void* discovery(void* arg) {
+    // First send a discovery to the multicast group
+    // need to encode who is sending the notification
+    multicast_send(zcs_node.mcast, "DISCOVERY", strlen("DISCOVERY"));
+    char discvoery_buffer[100];
+    while(1) {
+        // now we need to wait for a response
+        multicast_receive(zcs_node.mcast, discvoery_buffer, 100);
+    }
+}
+
 /**
  * @brief Setup the parameters and initializations of necesasry components
  * @return 0 on success, -1 on failure
@@ -34,6 +47,12 @@ int zcs_init() {
     zcs_node.mcast = m; // save the multicast object to the node object
     zcs_node.isOnline = 1; // set the node to offline
     return 0;
+    // When a node comes up (when init is called), it sends a DISCOVERY message
+    pthread_t discoveryThread;
+    if (pthread_create(&discoveryThread, NULL, &discovery, NULL) != 0) {
+        perror("zcs_init: pthread_create");
+        return -1;
+    }
 }
 
 /**
@@ -41,17 +60,18 @@ int zcs_init() {
  * @return 0 on success, -1 on failure
 */
 int zcs_start(char *name, zcs_attribute_t attr[], int num) {
-    // check if init was called
+    // Check if init was called before
     if (zcs_node.mcast == NULL) { 
         perror("zcs_start: init not called yet");
         return -1; 
     }
 
-    // Copy name to the node object
+    // Check if the node name is too long
     if (strlen(name) > MAX_NAME_LEN) {
         perror("zcs_start: node name too long");
         return -1;
     }
+    
     strcpy(zcs_node.name, name);
     // TODO : should we add a NULL character at the end? 
 
@@ -64,6 +84,9 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         zcs_node.attributes[i] = attr[i];
     }
     zcs_node.num_attributes = num;
+
+    // Send notification to the multicast group
+
 }
 
 /**
@@ -76,6 +99,8 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
         perror("zcs_post_ad: node not started yet");
         return -1; 
     }
+    
+    
     // Post ad to the multicast group
     // Ad should be posted MAX_AD_ATTEMPTS times over MAX_AD_DURATION seconds
     // For now, we will just implement a loose version of this

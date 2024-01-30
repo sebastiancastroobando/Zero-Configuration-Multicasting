@@ -93,8 +93,13 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 
 }
 
+/**
+ * @brief Scan for nodes with a given value for a given attribute. The names of the
+ * nodes that match the query are returned in node_names
+*/
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
     // TODO
+    
 }
 
 /**

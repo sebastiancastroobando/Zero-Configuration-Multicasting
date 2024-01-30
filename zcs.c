@@ -29,12 +29,24 @@ static zcs_node_t zcs_node;
 void* discovery(void* arg) {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
-    multicast_send(zcs_node.mcast, "DISCOVERY", strlen("DISCOVERY"));
-    char discvoery_buffer[100];
+    // Ex of message: "DISCOVERY:node_name"
+    char discovery_msg[100]; 
+    strcpy(discovery_msg, "DISCOVERY:");
+    strcat(discovery_msg, zcs_node.name);
+    multicast_send(zcs_node.mcast, discovery_msg, strlen(discovery_msg));
+
+    char discovery_buffer[100];
     while(1) {
         // now we need to wait for a response
-        // what happens if we receive two messages at the same time? 
-        multicast_receive(zcs_node.mcast, discvoery_buffer, 100);
+        // what happens if we receive two messages at the same time?
+        // Ex of notification: "NOTIFICATION:node_name"
+        multicast_receive(zcs_node.mcast, discovery_buffer, 100);
+        if (strstr(discovery_buffer, "NOTIFICATION:") != NULL) {
+            // The NOTIFICATION will have full information about the service. 
+            // how do we encode the attributes?
+            // Ex of notification: 
+            // "NOTIFICATION:node_name:attr1:val1:attr2:val2:attr3:val3"
+        }
     }
 }
 
@@ -43,7 +55,11 @@ void* heartbeat(void* arg) {
     while(1) {
         // send a heartbeat to the multicast group
         // need to encode who is sending the notification
-        multicast_send(zcs_node.mcast, "HEARTBEAT", strlen("HEARTBEAT"));
+        // Ex of message: "HEARTBEAT:node_name"
+        char heartbeat_msg[100];
+        strcpy(heartbeat_msg, "HEARTBEAT:");
+        strcat(heartbeat_msg, zcs_node.name);
+        multicast_send(zcs_node.mcast, heartbeat_msg, strlen(heartbeat_msg));
         sleep(HEARTBEAT_INTERVAL);
     }
 }
@@ -84,8 +100,8 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
         return -1;
     }
     
-    strcpy(zcs_node.name, name);
     // TODO : should we add a NULL character at the end? 
+    strcpy(zcs_node.name, name);
 
     // Allocate the memory necessary for the attributes
     zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
@@ -128,7 +144,6 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
         sleep(1);
     }
     return attempts;
-
 }
 
 /**

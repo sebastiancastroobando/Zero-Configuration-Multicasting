@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
     
     int sport = atoi(argv[1]);
     printf("Send-to port: %d\n", sport);
-    sranddev();
     int myport = sport + random() % sport;
     printf("Receiving port: %d\n", myport);
     char *msg = argv[2];

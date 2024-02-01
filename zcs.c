@@ -35,6 +35,15 @@ typedef struct {
 // Node object
 static zcs_node_t zcs_node; 
 
+void zcs_multicast_send(char *msg) {
+	multicast_send(zcs_node.msend, msg, strlen(msg));
+	// resend if not received
+	while (multicast_check_receive(zcs_node.msend) == 0) {
+		printf("resend\n");
+		multicast_send(zcs_node.msend, msg, strlen(msg));
+	}
+}
+
 int discovery() {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
@@ -49,15 +58,9 @@ int discovery() {
 	strcat(discovery_msg, "APP:");
 	strcat(discovery_msg, zcs_node.name);
 
-    multicast_send(zcs_node.msend, discovery_msg, strlen(discovery_msg));
-
     char discovery_buffer[BUF_SIZE];
-    
-    // resend if not received
-    while (multicast_check_receive(zcs_node.msend) == 0) {
-	    printf("resend\n");
-	    multicast_send(zcs_node.msend, discovery_msg, strlen(discovery_msg));
-    }
+
+	zcs_multicast_send(discovery_msg);
 
     // keep processing messages as they come in
     while (multicast_check_receive(zcs_node.msend) > 0) {
@@ -82,7 +85,7 @@ int discovery() {
 				continue;
 			// parse the rest of the received data
 		}
-    }
+	}
 	return 0;
 }
 
@@ -99,12 +102,8 @@ int notification() {
 		strcat(msg, ":");
 	}
 
-	multicast_send(zcs_node.msend, msg, strlen(msg));
-	// resend if not received
-	while (multicast_check_receive(zcs_node.msend) == 0) {
-		printf("resend\n");
-		multicast_send(zcs_node.msend, msg, strlen(msg));
-	}
+	zcs_multicast_send(msg);
+
 	return 0;
 }
 
@@ -121,12 +120,8 @@ void* listener(void* arg) {
         // need to encode who is sending the notification
         // Ex of message: "HEARTBEAT:node_name"
 		if (zcs_node.type == ZCS_SERVICE_TYPE) {
-			multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg));
-			// resend if not received
-			while (multicast_check_receive(zcs_node.msend) == 0) {
-				printf("resend\n");
-				multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg));
-			}
+
+			zcs_multicast_send(heartbeat_msg);
 			sleep(HEARTBEAT_INTERVAL);
 
 			// node receives an incoming message
@@ -247,6 +242,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
     // Post ad to the multicast group
     // Ad should be posted MAX_AD_ATTEMPTS times over MAX_AD_DURATION seconds
     // For now, we will just implement a loose version of this
+	// REMARK: should we use zcs_multicast_send?
     int attempts = 0;
     int duration = 0;
     while (duration < MAX_AD_DURATION) {

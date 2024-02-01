@@ -9,8 +9,8 @@
 
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT			14500
-#define ZCS_CHNL_SEND		"224.1.1.1"
-#define ZCS_CHNL_RECV		"224.1.1.2"
+#define ZCS_CHANNEL1		"224.1.1.1"
+#define ZCS_CHANNEL2		"224.1.1.2"
 
 #define MAX_NAME_LEN		64
 #define MAX_AD_DURATION		10 // in seconds
@@ -148,16 +148,16 @@ int zcs_init(int type) {
 	// I don't think node should set a valid listen port if its
 	// sending something and conversely should not set a valid send
 	// port if its listening
-	int channel1, channel2;
+	int send_channel, recv_channel;
 	if (type == ZCS_APP_TYPE) {
-		channel1 = ZCS_CHNL_SEND;
-		channel2 = ZCS_CHNL_RECV;
+		send_channel = ZCS_CHANNEL1;
+		recv_channel = ZCS_CHANNEL2;
 	} else if (type == ZCS_SERVICE_TYPE) {
-		channel1 = ZCS_CHNL_RECV;
-		channel2 = ZCS_CHNL_SEND;
+		send_channel = ZCS_CHANNEL2;
+		recv_channel = ZCS_CHANNEL1;
 	}
-    mcast_t *msend = multicast_init(channel1, ZCS_PORT, ZCS_PORT + 1);
-	mcast_t *mrecv = multicast_init(channel2, ZCS_PORT + 1, ZCS_PORT);
+    mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
+	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
     if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
 		return -1;

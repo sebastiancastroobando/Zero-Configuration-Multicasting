@@ -81,8 +81,6 @@ int discovery() {
 				strcpy(received_data[i++], token);
 				token = strtok(NULL, &delim);
 			}
-			if (strcmp(received_data[1], "APP") == 0)
-				continue;
 			// parse the rest of the received data
 		}
 	}
@@ -109,7 +107,7 @@ int notification() {
 
 // heartbeat should probably also just be an overall listener
 // for DISCOVERY for example, or just any incoming messages
-void* listener(void* arg) {
+void* run(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
 	char msg[BUF_SIZE];
 	strcpy(heartbeat_msg, "HEARTBEAT:");
@@ -217,11 +215,12 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 		return -1;
 	}
 
-    // turn the node on, aka listen to activity
+    // turn the node on, aka run it
 	// both nodes would listen for DISCOVERY, query, or ad
 	// heartbeat is included if it is a service node
-    pthread_t listenerThread;
-    if (pthread_create(&listenerThread, NULL, &listener, NULL) != 0) {
+	// same with notification
+    pthread_t runThread;
+    if (pthread_create(&runThread, NULL, &run, NULL) != 0) {
         perror("zcs_start: pthread_create\n");
         return -1;
     }

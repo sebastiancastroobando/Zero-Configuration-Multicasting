@@ -95,9 +95,9 @@ int notification() {
 	strcat(msg, "SERVICE:");
 	strcat(msg, zcs_node.name);
 	for (int i = 0; i < zcs_node.num_attributes; i++) {
-		strcat(msg, &zcs_node->attributes[i].attr_name);
+		strcat(msg, *zcs_node->attributes[i].attr_name);
 		strcat(msg, ":");
-		strcat(msg, &zcs_node->attributes[i].value);
+		strcat(msg, *zcs_node->attributes[i].value);
 		strcat(msg, ":");
 	}
 

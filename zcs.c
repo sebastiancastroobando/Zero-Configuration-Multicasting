@@ -7,11 +7,10 @@
 #include "multicast.h"
 #include "zcs.h"
 
-// vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT			14500
-#define ZCS_ADDR			"224.1.1.1"
+#define ZCS_CHANNEL1		"224.1.1.1"
+#define ZCS_CHANNEL2		"224.1.1.2"
 
 #define MAX_NAME_LEN		64
 #define MAX_AD_DURATION		10 // in seconds
@@ -27,13 +26,53 @@ typedef struct {
 	char name[MAX_NAME_LEN];
     int type;
     zcs_attribute_t *attributes;
-    mcast_t *mcast;
+    mcast_t *msend;
+	mcast_t *mrecv;
     int num_attributes;
     int isOnline;
 } zcs_node_t;
 
+typedef struct {
+	zcs_node_t nodes[MAX_SIZE];
+	int num_nodes;
+} zcs_reg_t;
+
 // Node object
-static zcs_node_t zcs_node; 
+static zcs_node_t zcs_node;
+pthread_t *runThread;
+zcs_reg_t local_reg;
+
+void zcs_multicast_send(char *msg) {
+	multicast_send(zcs_node.msend, msg, strlen(msg));
+	// resend if not received
+	while (multicast_check_receive(zcs_node.msend) == 0) {
+		printf("resend\n");
+		multicast_send(zcs_node.msend, msg, strlen(msg));
+	}
+}
+
+int make_reg_entry(char *data[], int dsize) {
+	// FORMAT: "NOTIFICATION:type:name:attr1:val1:attr2:val2:attr3:val3"
+	zcs_node_t *node = (zcs_node_t*) malloc(sizeof(zcs_node_t));
+	if (!node) {
+		exit(-1);
+	}
+	node->type = *data[1];
+	node->name = *data[2];
+	node->isOnline = 0;
+	node->num_attributes = (int) (dsize - 3)/2;
+	node->attributes = (zcs_attribute_t*) malloc(sizeof(zcs_attribute_t) * node->num_attributes);
+	if (!attrs) {
+		perror("make_reg_entry: bad malloc\n");
+		exit(-1);
+	}
+	for (int i = 2; i < dsize; i++) {
+		// TODO: fill node attributes
+	}
+	// fill local registry
+	local_reg.nodes[local_reg.num_nodes++] = node;
+	return 0;
+}
 
 int discovery() {
     // First send a discovery to the multicast group
@@ -43,46 +82,43 @@ int discovery() {
 	const char delim = ':';
 	char *token;
 	char *received_data[MAX_SIZE];
-	int i;
+	int dsize;
 
     strcpy(discovery_msg, "DISCOVERY:");
 	strcat(discovery_msg, "APP:");
 	strcat(discovery_msg, zcs_node.name);
 
-    multicast_send(zcs_node.mcast, discovery_msg, strlen(discovery_msg));
-
     char discovery_buffer[BUF_SIZE];
-    
-    // resend if not received
-    while (multicast_check_receive(zcs_node.mcast) == 0) {
-	    printf("resend\n");
-	    multicast_send(zcs_node.mcast, discovery_msg, strlen(discovery_msg));
-    }
+
+	zcs_multicast_send(discovery_msg);
 
     // keep processing messages as they come in
-    while (multicast_check_receive(zcs_node.mcast) > 0) {
+    while (multicast_check_receive(zcs_node.msend) > 0) {
 	    // now we need to wait for a response
 	    // what happens if we receive two messages at the same time?
 	    // Ex of notification: "NOTIFICATION:node_name"
-	    multicast_receive(zcs_node.mcast, discovery_buffer, BUF_SIZE);
+	    multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
 	    if (strstr(discovery_buffer, "NOTIFICATION:") != NULL) {
 		    // The NOTIFICATION will have full information about the service. 
 		    // how do we encode the attributes?
 		    // Ex of notification: 
 		    // "NOTIFICATION:type:name:attr1:val1:attr2:val2:attr3:val3"
 			token = strtok(str, &delim);
-			i = 0;
+			dsize = 0;
 			while (token !=	NULL) {
-				if (i == MAX_SIZE)
+				if (dsize == MAX_SIZE)
 					break;
-				strcpy(received_data[i++], token);
+				received_data[dsize] = (char*) malloc(strlen(token) * sizeof(char));
+				if (!received_data[dsize]) {
+					perror("discover: bad malloc\n");
+					exit(-1);
+				}
+				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, &delim);
 			}
-			if (strcmp(received_data[1], "APP") == 0)
-				continue;
 			// parse the rest of the received data
 		}
-    }
+	}
 	return 0;
 }
 
@@ -93,24 +129,20 @@ int notification() {
 	strcat(msg, "SERVICE:");
 	strcat(msg, zcs_node.name);
 	for (int i = 0; i < zcs_node.num_attributes; i++) {
-		strcat(msg, &zcs_node->attributes[i].attr_name);
+		strcat(msg, zcs_node.attributes[i]->attr_name);
 		strcat(msg, ":");
-		strcat(msg, &zcs_node->attributes[i].value);
+		strcat(msg, zcs_node.attributes[i]->value);
 		strcat(msg, ":");
 	}
 
-	multicast_send(zcs_node.mcast, msg, strlen(msg));
-	// resend if not received
-	while (multicast_check_receive(zcs_node.mcast) == 0) {
-		printf("resend\n");
-		multicast_send(zcs_node.mcast, msg, strlen(msg));
-	}
+	zcs_multicast_send(msg);
+
 	return 0;
 }
 
 // heartbeat should probably also just be an overall listener
 // for DISCOVERY for example, or just any incoming messages
-void* listener(void* arg) {
+void* run(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
 	char msg[BUF_SIZE];
 	strcpy(heartbeat_msg, "HEARTBEAT:");
@@ -121,17 +153,13 @@ void* listener(void* arg) {
         // need to encode who is sending the notification
         // Ex of message: "HEARTBEAT:node_name"
 		if (zcs_node.type == ZCS_SERVICE_TYPE) {
-			multicast_send(zcs_node.mcast, heartbeat_msg, strlen(heartbeat_msg));
-			// resend if not received
-			while (multicast_check_receive(zcs_node.mcast) == 0) {
-				printf("resend\n");
-				multicast_send(zcs_node.mcast, heartbeat_msg, strlen(heartbeat_msg));
-			}
+
+			zcs_multicast_send(heartbeat_msg);
 			sleep(HEARTBEAT_INTERVAL);
 
 			// node receives an incoming message
-			if (multicast_check_receive(zcs_node.mcast) > 0) {
-				multicast_receive(zcs_node.mcast, msg, BUF_SIZE);
+			if (multicast_check_receive(zcs_node.msend) > 0) {
+				multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
 				if (strstr(msg, "DISCOVERY:") != NULL) {
 					// arrange self data as specified earlier
 					// "NOTIFICATION:type:name:attr1:val1:attr2:val2:attr3:val3"
@@ -149,16 +177,30 @@ void* listener(void* arg) {
 */
 int zcs_init(int type) {
     // Initialize multicast
-    mcast_t *m = multicast_init(ZCS_ADDR, ZCS_PORT, ZCS_PORT);
-    if (m == NULL) {
+	// REMARK: since we now know that we need two comm channels,
+	// I don't think node should set a valid listen port if its
+	// sending something and conversely should not set a valid send
+	// port if its listening
+	int send_channel, recv_channel;
+	if (type == ZCS_APP_TYPE) {
+		send_channel = ZCS_CHANNEL1;
+		recv_channel = ZCS_CHANNEL2;
+	} else if (type == ZCS_SERVICE_TYPE) {
+		send_channel = ZCS_CHANNEL2;
+		recv_channel = ZCS_CHANNEL1;
+	}
+    mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
+	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
+    if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
 		return -1;
 	}
 
-	multicast_setup_recv(m);
+	multicast_setup_recv(mrecv);
 
 	zcs_node.type = type;
-    zcs_node.mcast = m; // save the multicast object to the node object
+    zcs_node.msend = msend; // save the multicast object to the node object
+	zcs_node.mrecv = mrecv;
     zcs_node.isOnline = 1; // set the node to offline
     return 0;
     // When a node comes up (when init is called), it sends a DISCOVERY message
@@ -177,7 +219,7 @@ int zcs_init(int type) {
 */
 int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     // Check if init was called before
-    if (zcs_node.mcast == NULL) { 
+    if (!zcs_node.msend || !zcs_node.mrecv) {
         perror("zcs_start: init not called yet\n");
         return -1; 
     }
@@ -193,11 +235,13 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     strcpy(zcs_node.name, name);
 
     // Allocate the memory necessary for the attributes
-    zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
+    zcs_node.attributes = (zcs_attribute_t *) malloc(sizeof(zcs_attribute_t) * num);
 
     // Copy the attributes to the node object
     memcpy(zcs_node.attributes, attr, num * sizeof(zcs_attribute_t));
     zcs_node.num_attributes = num;
+
+	zcs_node.isOnline = 0;
 
 	if (zcs_node.type == ZCS_APP_TYPE) {
 		discovery();
@@ -208,11 +252,12 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 		return -1;
 	}
 
-    // turn the node on, aka listen to activity
+    // turn the node on, aka run it
 	// both nodes would listen for DISCOVERY, query, or ad
 	// heartbeat is included if it is a service node
-    pthread_t listenerThread;
-    if (pthread_create(&listenerThread, NULL, &listener, NULL) != 0) {
+	// same with notification
+    runThread = (pthread_t*) malloc(sizeof(pthread_t));
+    if (!pthread_create(runThread, NULL, &run, NULL) || !runThread) {
         perror("zcs_start: pthread_create\n");
         return -1;
     }
@@ -224,7 +269,7 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 */
 int zcs_post_ad(char *ad_name, char *ad_value) {
     // check if node was started
-    if (zcs_node.mcast == NULL) { 
+    if (!zcs_node.msend || !zcs_node.mrecv) {
         perror("zcs_post_ad: node not started yet\n");
         return -1; 
     }
@@ -233,12 +278,13 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
     // Post ad to the multicast group
     // Ad should be posted MAX_AD_ATTEMPTS times over MAX_AD_DURATION seconds
     // For now, we will just implement a loose version of this
+	// REMARK: should we use zcs_multicast_send?
     int attempts = 0;
     int duration = 0;
     while (duration < MAX_AD_DURATION) {
         // should we send two messages or one? If one, how do we parse it?
-        multicast_send(zcs_node.mcast, ad_name, strlen(ad_name));
-        multicast_send(zcs_node.mcast, ad_value, strlen(ad_value));
+        multicast_send(zcs_node.msend, ad_name, strlen(ad_name));
+        multicast_send(zcs_node.msend, ad_value, strlen(ad_value));
         attempts++;
         duration++;
         sleep(1);
@@ -263,10 +309,14 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 }
 
 int zcs_shutdown() {
+	pthread_join(*runThread, NULL);
+	pthread_cancel(*runThread);
+	free(runThread);
     // free the memory allocated for the attributes
     free(zcs_node.attributes);
     // free the memory allocated for the multicast object
-    multicast_destroy(zcs_node.mcast);
+    multicast_destroy(zcs_node.msend);
+	multicast_destroy(zcs_node.mrecv);
     // set the node to offline
     zcs_node.isOnline = 0;
     return 0;

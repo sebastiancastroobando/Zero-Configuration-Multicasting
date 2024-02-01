@@ -33,7 +33,8 @@ typedef struct {
 } zcs_node_t;
 
 // Node object
-static zcs_node_t zcs_node; 
+static zcs_node_t zcs_node;
+static pthread_t *runThread;
 
 void zcs_multicast_send(char *msg) {
 	multicast_send(zcs_node.msend, msg, strlen(msg));
@@ -219,8 +220,8 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 	// both nodes would listen for DISCOVERY, query, or ad
 	// heartbeat is included if it is a service node
 	// same with notification
-    pthread_t runThread;
-    if (pthread_create(&runThread, NULL, &run, NULL) != 0) {
+    runThread = (pthread_t*) malloc(sizeof(pthread_t));
+    if (!pthread_create(runThread, NULL, &run, NULL) || !runThread) {
         perror("zcs_start: pthread_create\n");
         return -1;
     }
@@ -272,6 +273,9 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 }
 
 int zcs_shutdown() {
+	pthread_join(*runThread, NULL);
+	pthread_cancel(*runThread);
+	free(runThread);
     // free the memory allocated for the attributes
     free(zcs_node.attributes);
     // free the memory allocated for the multicast object

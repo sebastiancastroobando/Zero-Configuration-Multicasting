@@ -32,9 +32,15 @@ typedef struct {
     int isOnline;
 } zcs_node_t;
 
+typedef struct {
+	zcs_node_t nodes[MAX_SIZE];
+	int num_nodes;
+} zcs_reg_t;
+
 // Node object
 static zcs_node_t zcs_node;
-static pthread_t *runThread;
+pthread_t *runThread;
+zcs_reg_t local_reg;
 
 void zcs_multicast_send(char *msg) {
 	multicast_send(zcs_node.msend, msg, strlen(msg));
@@ -45,6 +51,29 @@ void zcs_multicast_send(char *msg) {
 	}
 }
 
+int make_reg_entry(char *data[], int dsize) {
+	// FORMAT: "NOTIFICATION:type:name:attr1:val1:attr2:val2:attr3:val3"
+	zcs_node_t *node = (zcs_node_t*) malloc(sizeof(zcs_node_t));
+	if (!node) {
+		exit(-1);
+	}
+	node->type = *data[1];
+	node->name = *data[2];
+	node->isOnline = 0;
+	node->num_attributes = (int) (dsize - 3)/2;
+	node->attributes = (zcs_attribute_t*) malloc(sizeof(zcs_attribute_t) * node->num_attributes);
+	if (!attrs) {
+		perror("make_reg_entry: bad malloc\n");
+		exit(-1);
+	}
+	for (int i = 2; i < dsize; i++) {
+		// TODO: fill node attributes
+	}
+	// fill local registry
+	local_reg.nodes[local_reg.num_nodes++] = node;
+	return 0;
+}
+
 int discovery() {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
@@ -53,7 +82,7 @@ int discovery() {
 	const char delim = ':';
 	char *token;
 	char *received_data[MAX_SIZE];
-	int i;
+	int dsize;
 
     strcpy(discovery_msg, "DISCOVERY:");
 	strcat(discovery_msg, "APP:");
@@ -75,11 +104,16 @@ int discovery() {
 		    // Ex of notification: 
 		    // "NOTIFICATION:type:name:attr1:val1:attr2:val2:attr3:val3"
 			token = strtok(str, &delim);
-			i = 0;
+			dsize = 0;
 			while (token !=	NULL) {
-				if (i == MAX_SIZE)
+				if (dsize == MAX_SIZE)
 					break;
-				strcpy(received_data[i++], token);
+				received_data[dsize] = (char*) malloc(strlen(token) * sizeof(char));
+				if (!received_data[dsize]) {
+					perror("discover: bad malloc\n");
+					exit(-1);
+				}
+				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, &delim);
 			}
 			// parse the rest of the received data
@@ -95,9 +129,9 @@ int notification() {
 	strcat(msg, "SERVICE:");
 	strcat(msg, zcs_node.name);
 	for (int i = 0; i < zcs_node.num_attributes; i++) {
-		strcat(msg, *zcs_node->attributes[i].attr_name);
+		strcat(msg, zcs_node.attributes[i]->attr_name);
 		strcat(msg, ":");
-		strcat(msg, *zcs_node->attributes[i].value);
+		strcat(msg, zcs_node.attributes[i]->value);
 		strcat(msg, ":");
 	}
 
@@ -201,11 +235,13 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     strcpy(zcs_node.name, name);
 
     // Allocate the memory necessary for the attributes
-    zcs_node.attributes = (zcs_attribute_t *)malloc(sizeof(zcs_attribute_t) * num);
+    zcs_node.attributes = (zcs_attribute_t *) malloc(sizeof(zcs_attribute_t) * num);
 
     // Copy the attributes to the node object
     memcpy(zcs_node.attributes, attr, num * sizeof(zcs_attribute_t));
     zcs_node.num_attributes = num;
+
+	zcs_node.isOnline = 0;
 
 	if (zcs_node.type == ZCS_APP_TYPE) {
 		discovery();

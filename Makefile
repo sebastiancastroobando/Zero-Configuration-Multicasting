@@ -1,10 +1,10 @@
 CC = gcc
 TEST_FILES = multicast.c tester.c
-SEND_FILES = multicast.c send_test.c
-RECV_FILES = multicast.c receiver.c
+SEND_FILES = multicast.c zcs.c Seb-testers/seb_service.c
+RECV_FILES = multicast.c zcs.c Seb-testers/seb_app.c
 TEST_TARGET = tester
-SEND_TARGET = send_test
-RECV_TARGET = recieve
+SEND_TARGET = seb_service
+RECV_TARGET = seb_app
 
 all: test send recv
 

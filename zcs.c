@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <err.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "multicast.h"
 #include "zcs.h"
@@ -153,7 +154,7 @@ int discovery() {
 }
 
 // @check : should this be void?
-int notification() {
+void* notification(void* arg) {
 	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;isOnline:0;attr1:val1;attr2:val2;attr3:val3"
 	char msg[BUF_SIZE];
 	strcpy(msg, "msgType:NOTIFICATION;");
@@ -179,8 +180,6 @@ int notification() {
 			}
 		}
 	}
-
-	return 0;
 }
 
 // heartbeat should probably also just be an overall listener
@@ -209,7 +208,8 @@ void* heartbeat(void* arg) {
 */
 int zcs_init(int type) {
     // Initialize multicast groups
-	int send_channel, recv_channel;
+	// send_channel and recv_channel should be char* and not int
+	char *send_channel, *recv_channel;
 	if (type == ZCS_APP_TYPE) {
 		send_channel = ZCS_CHANNEL1;
 		recv_channel = ZCS_CHANNEL2;
@@ -295,13 +295,12 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 
 	zcs_node.isOnline = 0;
 
-	// Send a notification to the multicast group
-	notification();
+	// no need to call the notification here as the thread will do that
 
 	// create a listener thread that will listen for incoming DISCOVERY messages
 	// and send a notification
 	notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
-	if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
+	if (pthread_create(notificationThread, NULL, notification, NULL) || !notificationThread) {
 		perror("zcs_start: pthread_create\n");
 		return -1;
 	}
@@ -412,6 +411,7 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
     // TODO
+	return 0;
 }
 
 /**
@@ -437,12 +437,11 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 /**
  * @brief Log the message to the console
 */
-int zcs_log() {
+void zcs_log() {
 	// TODO
 	// we have to maintain some sort of log which would look like this: 
 	// node_name:UP->DOWN->UP->UP->DOWN->UP ...
 	// see thread#23 for more details https://edstem.org/us/courses/52052/discussion/4170350
-	return 0;
 }
 
 int zcs_shutdown() {

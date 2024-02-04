@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include "zcs.h"
+#include "../zcs.h"
 
 int ZCS_SERVICE_TYPE = 2; // TODO: remove this, just for testing
 
@@ -11,6 +11,9 @@ int main() {
 	    { .attr_name = "location", .value = "kitchen"},
 	    { .attr_name = "make", .value = "yamaha"} };
     rv = zcs_start("speaker-X", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    discovery();
+    
+    
+    zcs_shutdown();
+    return 0;
 }
 

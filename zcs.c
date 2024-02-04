@@ -48,6 +48,7 @@ zcs_reg_t local_reg;
 
 // @check : Good. No need to change.
 void zcs_multicast_send(char *msg) {
+	printf("we got hereee sending multi!\n");
 	multicast_send(zcs_node.msend, msg, strlen(msg));
 	// resend if not received
 	while (multicast_check_receive(zcs_node.msend) == 0) {
@@ -168,9 +169,11 @@ void* notification(void* arg) {
 		strcat(msg, ";");
 	}
 
+	printf("we got hereee!\n");
+	printf("msg: %s\n", msg);	
 	// send the notification to the multicast group
 	zcs_multicast_send(msg);
-
+	printf("we got hereee after!\n");
 	// wait for incoming messages DISCOVERY messages
 	while(1) {
 		if (multicast_check_receive(zcs_node.msend) > 0) {

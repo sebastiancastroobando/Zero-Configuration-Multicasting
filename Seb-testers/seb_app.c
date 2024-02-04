@@ -1,18 +1,34 @@
-#include <unistd.h>
+#include "../multicast.h"
 #include <stdio.h>
 #include <string.h>
-#include "../zcs.h"
+#include <stdlib.h>
 
-int ZCS_APP_TYPE = 1; // TODO: remove this, just for testing
+char buffer[100];
 
-void hello(char *s, char *r) {
-    printf("Ad received: %s, with value: %s\n", s, r);
-    zcs_log();
+int main(int argc, char *argv[]) {
+
+    if (argc <= 3) {
+	printf("Usage: tester src-port dest-port message \n");
+	exit(0);
+    }
+    
+    printf("Source port: %d\n", atoi(argv[1]));
+    printf("Destination port: %d\n", atoi(argv[2]));
+
+    mcast_t *m = multicast_init("224.1.1.2", atoi(argv[1]), atoi(argv[2]));
+
+    char *msg = argv[3];
+    multicast_setup_recv(m);
+    printf("==============\n");
+    multicast_send(m, msg, strlen(msg));
+    printf("==============\n");
+    while (1) {
+	while (multicast_check_receive(m) == 0) {
+	    multicast_send(m, msg, strlen(msg));
+	    printf("repeat.. \n");
+	}
+	multicast_receive(m, buffer, 100);
+	printf("Received:  %s\r\n", buffer);
+	fflush(stdout);
+    }
 }
-
-int main() {
-    int rv;
-    rv = zcs_init(ZCS_APP_TYPE);
-}
-
-

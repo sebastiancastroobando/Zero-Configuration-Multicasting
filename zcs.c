@@ -17,7 +17,7 @@
 #define MAX_NAME_LEN		64
 #define MAX_AD_DURATION		10 // in seconds
 #define MAX_AD_ATTEMPTS		3 // number of attempts to send an ad
-#define HEARTBEAT_INTERVAL	1 // in seconds
+#define HEARTBEAT_INTERVAL	5 // in seconds
 #define BUF_SIZE			1000 // TODO : 100 seems like too little, let's talk about this.
 #define MAX_SIZE			10 // max number of nodes
 #define MAX_MSG_SIZE		20 // max number of {attr_name, value} pairs
@@ -48,12 +48,11 @@ zcs_reg_t local_reg;
 
 // @check : Good. No need to change.
 void zcs_multicast_send(char *msg) {
-	printf("we got hereee sending multi!\n");
-	multicast_send(zcs_node.msend, msg, strlen(msg));
+	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
 	// resend if not received
-	while (multicast_check_receive(zcs_node.msend) == 0) {
+	while (multicast_check_receive(zcs_node.mrecv) == 0) {
 		printf("resend\n");
-		multicast_send(zcs_node.msend, msg, strlen(msg));
+		multicast_send(zcs_node.msend, msg, strlen(msg)+1);
 	}
 }
 
@@ -169,11 +168,11 @@ void* notification(void* arg) {
 		strcat(msg, ";");
 	}
 
-	printf("we got hereee!\n");
-	printf("msg: %s\n", msg);	
 	// send the notification to the multicast group
+	printf("before here ---\n");
 	zcs_multicast_send(msg);
-	printf("we got hereee after!\n");
+	printf("here---\n");
+
 	// wait for incoming messages DISCOVERY messages
 	while(1) {
 		if (multicast_check_receive(zcs_node.msend) > 0) {
@@ -193,7 +192,9 @@ void* heartbeat(void* arg) {
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
+	strcat(heartbeat_msg, "\0");
     
+	printf("the message : %s\n", heartbeat_msg);
     while(1) {
         // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
 		// sanity check... although only a service node would call this function
@@ -303,7 +304,7 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 	// create a listener thread that will listen for incoming DISCOVERY messages
 	// and send a notification
 	notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
-	if (pthread_create(notificationThread, NULL, notification, NULL) || !notificationThread) {
+	if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
 		perror("zcs_start: pthread_create\n");
 		return -1;
 	}

@@ -24,12 +24,12 @@ int main(int argc, char *argv[]) {
     multicast_send(m, msg, strlen(msg));
     printf("==============\n");
     while (1) {
-	while (multicast_check_receive(m) == 0) {
-	    multicast_send(m, msg, strlen(msg));
-	    printf("repeat.. \n");
-	}
-	multicast_receive(m, buffer, 100);
-	printf("Received:  %s\r\n", buffer);
-	fflush(stdout);
+	    while (multicast_check_receive(m) == 0) {
+            multicast_send(m, msg, strlen(msg));
+            printf("repeat.. \n");
+        }
+        multicast_receive(m, buffer, 100);
+        printf("Received:  %s\r\n", buffer);
+        // fflush(stdout);
     }
 }

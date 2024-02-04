@@ -99,6 +99,7 @@ int make_reg_entry(char *data[], int dsize) {
 }
 
 // @check : I don't like the sending message here.
+// sent by APP
 int discovery() {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
@@ -153,6 +154,7 @@ int discovery() {
 }
 
 // @check : should this be void?
+// sent by SERVICE
 void* notification(void* arg) {
 	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;isOnline:0;attr1:val1;attr2:val2;attr3:val3"
 	char msg[BUF_SIZE];
@@ -171,24 +173,18 @@ void* notification(void* arg) {
 	zcs_multicast_send(msg);
 
 	// wait for incoming messages DISCOVERY messages
-	int test;
-	do {
-		printf("test 1 \n");
-		if (multicast_check_receive(zcs_node.mrecv) > 0) {
-			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
-			if (strstr(msg, "msgType:DISCOVERY;") != NULL) {
-				printf("message sent for discovery\n");
-				zcs_multicast_send(msg);
-			}
+	while (multicast_check_receive(zcs_node.mrecv) > 0) {
+		multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
+		if (strstr(msg, "msgType:DISCOVERY;") != NULL) {
+			printf("message sent for discovery\n");
+			zcs_multicast_send(msg);
 		}
-		printf("test 2 \n");
-		test = multicast_check_receive(zcs_node.mrecv);
-		printf("the test : %d\n",test);
-	} while (test == 0);
+	}
 }
 
 // heartbeat should probably also just be an overall listener
 // for DISCOVERY for example, or just any incoming messages
+// sent by SERVICE
 void* heartbeat(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
 	char msg[BUF_SIZE];
@@ -200,12 +196,8 @@ void* heartbeat(void* arg) {
 	printf("the message : %s\n", heartbeat_msg);
     while(1) {
         // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
-		// sanity check... although only a service node would call this function
-		if (zcs_node.type == ZCS_SERVICE_TYPE) {
-
-			zcs_multicast_send(heartbeat_msg);
-			sleep(HEARTBEAT_INTERVAL);
-		}
+		zcs_multicast_send(heartbeat_msg);
+		sleep(HEARTBEAT_INTERVAL);
     }
 }
 
@@ -304,21 +296,23 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 
 	// no need to call the notification here as the thread will do that
 
-	// create a listener thread that will listen for incoming DISCOVERY messages
-	// and send a notification
-	notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
-	if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
-		perror("zcs_start: pthread_create\n");
-		return -1;
-	}
+	if (zcs_node.type == ZCS_SERVICE_TYPE) {
+		// create a listener thread that will listen for incoming DISCOVERY messages
+		// and send a notification
+		notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
+		if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
+			perror("zcs_start: pthread_create\n");
+			return -1;
+		}
 
-	// Start the service status thread which will send heartbeats
-	// and listen for incoming messages
-	heartbeatThread = (pthread_t*) malloc(sizeof(pthread_t));
+		// Start the service status thread which will send heartbeats
+		// and listen for incoming messages
+		heartbeatThread = (pthread_t*) malloc(sizeof(pthread_t));
 
-	if (pthread_create(heartbeatThread, NULL, &heartbeat, NULL) || !heartbeatThread) {
-		perror("zcs_start: pthread_create\n");
-		return -1;
+		if (pthread_create(heartbeatThread, NULL, &heartbeat, NULL) || !heartbeatThread) {
+			perror("zcs_start: pthread_create\n");
+			return -1;
+		}
 	}
 
 	return 0;

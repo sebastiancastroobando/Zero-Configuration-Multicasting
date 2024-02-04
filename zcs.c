@@ -22,9 +22,6 @@
 #define MAX_SIZE			10 // max number of nodes
 #define MAX_MSG_SIZE		20 // max number of {attr_name, value} pairs
 
-#define ZCS_APP_TYPE		1
-#define ZCS_SERVICE_TYPE	2
-
 typedef struct {
 	char name[MAX_NAME_LEN];
     int type;
@@ -72,7 +69,7 @@ int make_reg_entry(char *data[], int dsize) {
 		perror("make_reg_entry: bad malloc\n");
 		exit(-1);
 	}
-
+	
 	// TODO : only an app will call this function, therefore we can assume that the type is a service?
 	node->type = ZCS_SERVICE_TYPE;
 	// parse the node name
@@ -121,11 +118,11 @@ int discovery() {
 	zcs_multicast_send(discovery_msg);
 
     // @Check this, is it going to wait for all the messages to be received?
-    while (multicast_check_receive(zcs_node.msend) > 0) {
+    while (multicast_check_receive(zcs_node.mrecv) > 0) {
 	    // We will receive a message from at most 10 services nodes
-	
 	    multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
 		if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
+			printf("we got here ------\n");
 		    // the message is a notification, we need to parse it
 			char *str;
 			token = strtok(discovery_buffer, &delim);
@@ -147,8 +144,10 @@ int discovery() {
 				token = strtok(NULL, &delim);
 			}
 			// make a registry entry
+			printf("we got here!\n");
 			make_reg_entry(received_data, dsize);
 		}
+		
 	}
 	return 0;
 }
@@ -169,19 +168,23 @@ void* notification(void* arg) {
 	}
 
 	// send the notification to the multicast group
-	printf("before here ---\n");
 	zcs_multicast_send(msg);
-	printf("here---\n");
 
 	// wait for incoming messages DISCOVERY messages
-	while(1) {
-		if (multicast_check_receive(zcs_node.msend) > 0) {
+	int test;
+	do {
+		printf("test 1 \n");
+		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
 			if (strstr(msg, "msgType:DISCOVERY;") != NULL) {
+				printf("message sent for discovery\n");
 				zcs_multicast_send(msg);
 			}
 		}
-	}
+		printf("test 2 \n");
+		test = multicast_check_receive(zcs_node.mrecv);
+		printf("the test : %d\n",test);
+	} while (test == 0);
 }
 
 // heartbeat should probably also just be an overall listener
@@ -373,7 +376,7 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 	char ad_name[BUF_SIZE];
 	char ad_value[BUF_SIZE];
 	while (1) {
-		if (multicast_check_receive(zcs_node.msend) > 0) {
+		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
 			if (strstr(msg, "msgType:AD;") != NULL) {
 				// the message is an ad, we need to check 

@@ -8,6 +8,9 @@ typedef struct {
 
 typedef void (*zcs_cb_f)(char *, char *);
 
+#define ZCS_APP_TYPE		1
+#define ZCS_SERVICE_TYPE	2
+
 int zcs_init(int type);
 int zcs_start(char *name, zcs_attribute_t attr[], int num);
 int zcs_post_ad(char *ad_name, char *ad_value);

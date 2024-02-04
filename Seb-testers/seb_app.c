@@ -2,34 +2,24 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "../zcs.h"
 
 char buffer[100];
 
 int main(int argc, char *argv[]) {
-	int src = 17500;
-	int dest = 14500;
-    if (argc <= 1) {
-		printf("Usage: tester src-port dest-port message \n");
-		exit(0);
-    }
+	int rv;
+    rv = zcs_init(ZCS_APP_TYPE);
     
-    //printf("Source port: %d\n", atoi(argv[1]));
-    //printf("Destination port: %d\n", atoi(argv[2]));
+    // rv = zcs_query("type", "speaker", names, 10);
+    //if (rv > 0) {
+    //    zcs_attribute_t attrs[5];
+	//    int anum = 5;
+    //    rv = zcs_get_attribs(names[0], attrs, &anum);
+    //    if ((strcmp(attrs[0].attr_name, "location") == 0) && (strcmp(attrs[0].value, "kitchen") == 0)) {
+    //            rv = zcs_listen_ad(names[0], hello);
+    //    }
+    //}
 
-    mcast_t *m = multicast_init("224.1.1.2", src, dest);
-
-    char *msg = argv[1];
-    multicast_setup_recv(m);
-    printf("==============\n");
-    multicast_send(m, msg, strlen(msg));
-    printf("==============\n");
-    while (1) {
-	    while (multicast_check_receive(m) == 0) {
-            multicast_send(m, msg, strlen(msg));
-            printf("repeat.. \n");
-        }
-        multicast_receive(m, buffer, 100);
-        printf("Received:  %s\r\n", buffer);
-        // fflush(stdout);
-    }
+    
+    zcs_shutdown();
 }

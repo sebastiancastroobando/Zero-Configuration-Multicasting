@@ -24,3 +24,21 @@ int main() {
         }
     }
 }
+
+/*
+char *key, *value;
+				split_key_value(msg, &key, &value);
+				if (strcmp(key, "nodeName") == 0 && strcmp(value, name) == 0) {
+					// call the callback function
+					split_key_value(msg, &key, &value);
+					if (strcmp(key, "adName") == 0) {
+						strcpy(ad_name, value);
+					}
+					split_key_value(msg, &key, &value);
+					if (strcmp(key, "adValue") == 0) {
+						strcpy(ad_value, value);
+					}
+					cback(ad_name, ad_value);
+				}
+
+*/

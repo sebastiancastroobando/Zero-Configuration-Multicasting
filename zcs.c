@@ -45,6 +45,10 @@ static zcs_node_t zcs_node;
 pthread_t *heartbeatThread;
 pthread_t *notificationThread;
 zcs_reg_t local_reg;
+// static = only accessible from the library itself
+// volatile = ensures that compiler will not "optimize" this value
+// and every access will fetch the lastest value
+static volatile int detatchThreadServicesSignal = 1;
 
 // @check : Good. No need to change.
 void zcs_multicast_send(char *msg) {
@@ -172,7 +176,7 @@ void* notification(void* arg) {
 	zcs_multicast_send(msg);
 
 	// wait for incoming messages DISCOVERY messages
-	while(1) {
+	while(detatchThreadServicesSignal) {
 		if (multicast_check_receive(zcs_node.msend) > 0) {
 			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
 			if (strstr(msg, "msgType:DISCOVERY;") != NULL) {
@@ -180,6 +184,7 @@ void* notification(void* arg) {
 			}
 		}
 	}
+	return NULL;
 }
 
 // heartbeat should probably also just be an overall listener
@@ -190,16 +195,19 @@ void* heartbeat(void* arg) {
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
-    
-    while(1) {
+
+    while(detatchThreadServicesSignal) {
         // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
 		// sanity check... although only a service node would call this function
+		printf("\n ==loop== \n");
 		if (zcs_node.type == ZCS_SERVICE_TYPE) {
-
+			printf("enter here\n");
 			zcs_multicast_send(heartbeat_msg);
-			sleep(HEARTBEAT_INTERVAL);
+			//sleep(HEARTBEAT_INTERVAL);
+			printf("\n ==end sleep== \n");
 		}
     }
+	printf("\n ==end loop== \n");
 }
 
 /**
@@ -299,20 +307,25 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 
 	// create a listener thread that will listen for incoming DISCOVERY messages
 	// and send a notification
+	printf("we got here!\n");
 	notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
-	if (pthread_create(notificationThread, NULL, notification, NULL) || !notificationThread) {
-		perror("zcs_start: pthread_create\n");
+	if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
+		perror("zcs_start: pthread_create - notificatin thread not created\n");
 		return -1;
 	}
+	// we need to detach the thread from the execution of this function
+	pthread_detach(*notificationThread);
 
 	// Start the service status thread which will send heartbeats
 	// and listen for incoming messages
 	heartbeatThread = (pthread_t*) malloc(sizeof(pthread_t));
 
 	if (pthread_create(heartbeatThread, NULL, &heartbeat, NULL) || !heartbeatThread) {
-		perror("zcs_start: pthread_create\n");
+		perror("zcs_start: pthread_create - discovery thread not created\n");
 		return -1;
 	}
+	// we need to detach the thread from the execution of this function
+	pthread_detach(*heartbeatThread);
 
 	return 0;
 }
@@ -446,12 +459,15 @@ void zcs_log() {
 
 int zcs_shutdown() {
 	// free the memory allocated for the threads
-	pthread_join(*heartbeatThread, NULL);
-	pthread_cancel(*heartbeatThread);
-	free(heartbeatThread);
-	pthread_join(*notificationThread, NULL);
-	pthread_cancel(*notificationThread);
-	free(notificationThread);
+	// pthread_join(*heartbeatThread, NULL);
+	// pthread_cancel(*heartbeatThread);
+	detatchThreadServicesSignal = 0;
+	// TODO : we need to give some time to the thread to terminate gracefully and then free mem
+	// how long should it be? 
+	// free(heartbeatThread);
+	// pthread_join(*notificationThread, NULL);
+	// pthread_cancel(*notificationThread);
+	// free(notificationThread);
 
     // free the memory allocated for the attributes
     free(zcs_node.attributes);

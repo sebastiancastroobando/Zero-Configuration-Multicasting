@@ -14,4 +14,3 @@ int main() {
     zcs_shutdown();
     return 0;
 }
-

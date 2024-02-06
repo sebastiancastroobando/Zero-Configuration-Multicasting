@@ -3,8 +3,6 @@
 #include <string.h>
 #include "zcs.h"
 
-int ZCS_APP_TYPE = 1; // TODO: remove this, just for testing
-
 void hello(char *s, char *r) {
     printf("Ad received: %s, with value: %s\n", s, r);
     zcs_log();
@@ -17,6 +15,7 @@ int main() {
     rv = zcs_query("type", "speaker", names, 10);
     if (rv > 0) {
         zcs_attribute_t attrs[5];
+
 	    int anum = 5;
         rv = zcs_get_attribs(names[0], attrs, &anum);
         if ((strcmp(attrs[0].attr_name, "location") == 0) && (strcmp(attrs[0].value, "kitchen") == 0)) {

@@ -597,6 +597,7 @@ void zcs_log() {
             current_time = next_time;
         }
 
+
         // Handle the last sequence
         if (isUp) {
             printf("UP: %s -> now\n", ctime(&upStartTime));
@@ -633,5 +634,6 @@ int zcs_shutdown() {
 	multicast_destroy(zcs_node.mrecv);
     // set the node to offline
     zcs_node.isOnline = 0;
+
     return 0;
 }

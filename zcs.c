@@ -43,7 +43,45 @@ pthread_t *heartbeatThread;
 pthread_t *notificationThread;
 zcs_reg_t local_reg;
 
-// @check : Good. No need to change.
+// ------------------- Helper functions (Debugging) -------------------
+// @Description : Print the node object
+void print_node(zcs_node_t *node) {
+	printf("name: %s\n", node->name);
+	printf("type: %d\n", node->type);
+	printf("isOnline: %d\n", node->isOnline);
+	printf("num_attributes: %d\n", node->num_attributes);
+	for (int i = 0; i < node->num_attributes; i++) {
+		printf("attr_name: %s\n", node->attributes[i].attr_name);
+		printf("value: %s\n", node->attributes[i].value);
+	}
+}
+// @Description : Print the local registry
+void print_local_reg(zcs_reg_t *reg) {
+	for (int i = 0; i < reg->num_nodes; i++) {
+		print_node(&reg->nodes[i]);
+	}
+}
+// ---------------------------------------------------------------------
+
+// --------------- Helper functions (Memory Management) ----------------
+// @Description : Free the memory allocated for the attributes
+void free_node_attributes(zcs_node_t *node) {
+	// free the memory allocated for the attributes and NULL the pointers
+    if (node->attributes != NULL) {
+        for (int i = 0; i < node->num_attributes; i++) {
+            free(node->attributes[i].attr_name); 
+            node->attributes[i].attr_name = NULL; 
+
+            free(node->attributes[i].value); 
+            node->attributes[i].value = NULL; 
+        }
+        free(node->attributes);
+        node->attributes = NULL; 
+    }
+}
+// ---------------------------------------------------------------------
+
+// @Description : Send a message to the multicast group and wait for a response
 void zcs_multicast_send(char *msg) {
 	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
 	// resend if not received
@@ -53,23 +91,25 @@ void zcs_multicast_send(char *msg) {
 	}
 }
 
-// @check : @Denis, what do you think of this way to handle the received message?
+// @Description : Split the key and value of a key-value pair
 void split_key_value(char *str, char **key, char **value) {
 	*key = strtok(str, ":");
 	*value = strtok(NULL, ":");
 }
 
-// @check : I don't like the parsing of the message here.
+// @Description : Make a registry entry for a node
 int make_reg_entry(char *data[], int dsize) {
+	// example of data:
 	// data[0] = "msgType:NOTIFICATION"
 	// data[1] = "nodeName:node_name"
-	// ...
+	// data[2] = "attr1:val1"
+
 	zcs_node_t *node = (zcs_node_t*) malloc(sizeof(zcs_node_t));
 	if (!node) {
 		perror("make_reg_entry: bad malloc\n");
 		exit(-1);
 	}
-	
+
 	// TODO : only an app will call this function, therefore we can assume that the type is a service?
 	node->type = ZCS_SERVICE_TYPE;
 	// parse the node name
@@ -80,26 +120,44 @@ int make_reg_entry(char *data[], int dsize) {
 	// fill the rest of the node object
 	node->isOnline = 0;
 	node->num_attributes = dsize - 2;
-	node->attributes = (zcs_attribute_t*) malloc(sizeof(zcs_attribute_t) * node->num_attributes);
+	// allocate memory for the attributes
+	node->attributes = (zcs_attribute_t*) malloc((dsize - 2) * sizeof(zcs_attribute_t));
 	
 	if (!node->attributes) {
 		perror("make_reg_entry: bad malloc\n");
 		exit(-1);
 	}
 
+	// fill the attributes
 	for (int i = 2; i < dsize; i++) {
-		// fill the attributes
 		split_key_value(data[i], &key, &value);
-		strcpy(node->attributes[i - 2].attr_name, key);
-		strcpy(node->attributes[i - 2].value, value);
-	} 
+
+		// Allocate memory for attr_name and check for allocation success
+		node->attributes[i-2].attr_name = (char *)malloc(strlen(key) + 1); // +1 for null terminator
+		if (node->attributes[i-2].attr_name == NULL) {
+			perror("Failed to allocate memory for attr_name\n");
+			exit(-1);
+		}
+
+		// Allocate memory for value and check for allocation success
+		node->attributes[i-2].value = (char *)malloc(strlen(value) + 1); // +1 for null terminator
+		if (node->attributes[i-2].value == NULL) {
+			perror("Failed to allocate memory for value\n");
+			exit(-1);
+		}
+
+		// Now that memory is allocated, copy the strings
+		strcpy(node->attributes[i-2].attr_name, key);
+		strcpy(node->attributes[i-2].value, value);
+	}
+
 	// fill local registry
 	local_reg.nodes[local_reg.num_nodes++] = *node;
+
 	return 0;
 }
 
-// @check : I don't like the sending message here.
-// sent by APP
+// @Description : Discover other nodes in the multicast group
 int discovery() {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
@@ -110,54 +168,43 @@ int discovery() {
 	char *received_data[MAX_MSG_SIZE];
 	int dsize;
 
-	strcpy(discovery_msg, "msgType:DISCOVERY;nodeName:");
-	strcat(discovery_msg, zcs_node.name);
-	strcat(discovery_msg, ";"); // delimiter will mark the end of the message
+	strcpy(discovery_msg, "msgType:DISCOVERY;");
 
     char discovery_buffer[BUF_SIZE];
 
-	zcs_multicast_send(discovery_msg);
+	multicast_send(zcs_node.msend, discovery_msg, strlen(discovery_msg)+1);
 
-    // @Check this, is it going to wait for all the messages to be received?
-    while (multicast_check_receive(zcs_node.mrecv) > 0) {
-	    // We will receive a message from at most 10 services nodes
-	    multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-		if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
-			printf("we got here ------\n");
-		    // the message is a notification, we need to parse it
-			char *str;
-			token = strtok(discovery_buffer, &delim);
-			dsize = 0;
-			while (token != NULL) {
-				// check if we have reached the maximum size of the received data
-				if (dsize == MAX_MSG_SIZE)
-					// TODO : should we notify the user that we have reached the maximum size of paramaters?
-					break;
-				// allocate memory for the received data
-				received_data[dsize] = (char*) malloc(strlen(token) * sizeof(char));
-				// check if the allocation was successful
-				if (!received_data[dsize]) {
-					perror("discover: bad malloc\n");
-					exit(-1);
+	// wait for incoming messages NOTIFICATION messages
+	while(1) {
+		if (multicast_check_receive(zcs_node.mrecv) > 0) {
+			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
+			// print the received message
+			printf("Received: %s\n", discovery_buffer);
+			if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
+				// the message is a notification, we need to parse it
+				printf("Notification received: %s\n", discovery_buffer);
+				char *str;
+				token = strtok(discovery_buffer, &delim);
+				dsize = 0;
+				while (token != NULL) {
+					received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
+					strcpy(received_data[dsize++], token);
+					token = strtok(NULL, &delim);
 				}
-				// copy the token to the received data
-				strcpy(received_data[dsize++], token);
-				token = strtok(NULL, &delim);
+				// make a registry entry
+				make_reg_entry(received_data, dsize);
 			}
-			// make a registry entry
-			printf("we got here!\n");
-			make_reg_entry(received_data, dsize);
 		}
-		
 	}
 	return 0;
 }
 
-// @check : should this be void?
-// sent by SERVICE
+// @Description : Send a notification at service startup and on discovery message
 void* notification(void* arg) {
 	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;isOnline:0;attr1:val1;attr2:val2;attr3:val3"
 	char msg[BUF_SIZE];
+	// buffer to hold received messages
+	char buffer[BUF_SIZE];
 	strcpy(msg, "msgType:NOTIFICATION;");
 	strcat(msg, "nodeName:");
 	strcat(msg, zcs_node.name);
@@ -170,22 +217,25 @@ void* notification(void* arg) {
 	}
 
 	// send the notification to the multicast group
-	zcs_multicast_send(msg);
+	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
 
 	// wait for incoming messages DISCOVERY messages
-	while (multicast_check_receive(zcs_node.mrecv) > 0) {
-		multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
-		if (strstr(msg, "msgType:DISCOVERY;") != NULL) {
-			printf("message sent for discovery\n");
-			zcs_multicast_send(msg);
+	while(1){
+		// check for incoming messages
+		if (multicast_check_receive(zcs_node.mrecv) > 0) {
+			// print the check receive value
+			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
+			printf("Received: %s\n", buffer);
+			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
+				printf("Message received for discovery, sending: %s\n", msg);
+				zcs_multicast_send(msg);
+			}
 		}
 	}
 	return NULL;
 }
 
-// heartbeat should probably also just be an overall listener
-// for DISCOVERY for example, or just any incoming messages
-// sent by SERVICE
+// @Description : Send a heartbeat message to the multicast group
 void* heartbeat(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
 	char msg[BUF_SIZE];
@@ -198,6 +248,7 @@ void* heartbeat(void* arg) {
         // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
 		// it doesn't make sense to use zcs_multicast_send here
 		// because we are not expecting a response
+		printf("sending heartbeat\n");
 		multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg)+1);
 		sleep(HEARTBEAT_INTERVAL);
     }
@@ -244,7 +295,6 @@ int zcs_init(int type) {
 	if (type == ZCS_APP_TYPE) {
 		discovery();
 	}
-
 	return 0;
 }
 
@@ -444,14 +494,24 @@ void zcs_log() {
 }
 
 int zcs_shutdown() {
-	// free the memory allocated for the threads
-	pthread_join(*heartbeatThread, NULL);
-	pthread_cancel(*heartbeatThread);
-	free(heartbeatThread);
-	pthread_join(*notificationThread, NULL);
-	pthread_cancel(*notificationThread);
-	free(notificationThread);
-
+	// free the memory allocated for the threads and join them
+	// only services will have threads
+	if (zcs_node.type == ZCS_SERVICE_TYPE) {
+		pthread_join(*heartbeatThread, NULL);
+		pthread_cancel(*heartbeatThread);
+		free(heartbeatThread);
+		pthread_join(*notificationThread, NULL);
+		pthread_cancel(*notificationThread);
+		free(notificationThread);
+	} else if (zcs_node.type == ZCS_APP_TYPE) {
+		// print the local registry
+		print_local_reg(&local_reg);
+		// free the memory allocated for the local registry
+		for (int i = 0; i < local_reg.num_nodes; i++) {
+        	free_node_attributes(&local_reg.nodes[i]);
+		}
+	}
+	// TODO: should this be done for both types?
     // free the memory allocated for the attributes
     free(zcs_node.attributes);
     // free the memory allocated for the multicast object

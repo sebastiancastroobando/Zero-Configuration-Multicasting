@@ -180,6 +180,7 @@ void* notification(void* arg) {
 			zcs_multicast_send(msg);
 		}
 	}
+	return NULL;
 }
 
 // heartbeat should probably also just be an overall listener
@@ -192,11 +193,12 @@ void* heartbeat(void* arg) {
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
 	strcat(heartbeat_msg, "\0");
-    
-	printf("the message : %s\n", heartbeat_msg);
+
     while(1) {
         // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
-		zcs_multicast_send(heartbeat_msg);
+		// it doesn't make sense to use zcs_multicast_send here
+		// because we are not expecting a response
+		multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg)+1);
 		sleep(HEARTBEAT_INTERVAL);
     }
 }
@@ -293,8 +295,6 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     zcs_node.num_attributes = num;
 
 	zcs_node.isOnline = 0;
-
-	// no need to call the notification here as the thread will do that
 
 	if (zcs_node.type == ZCS_SERVICE_TYPE) {
 		// create a listener thread that will listen for incoming DISCOVERY messages
@@ -432,8 +432,6 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 	// node not found
 	return -1;
 }
-
-
 
 /**
  * @brief Log the message to the console

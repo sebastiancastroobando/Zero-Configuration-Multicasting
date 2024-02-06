@@ -13,21 +13,21 @@ int main(int argc, char *argv[]) {
 	exit(0);
     }
     
-    //printf("Source port: %d\n", atoi(argv[1]));
-    //printf("Destination port: %d\n", atoi(argv[2]));
+    printf("Source port: %d\n", atoi(argv[1]));
+    printf("Destination port: %d\n", atoi(argv[2]));
 
-    mcast_t *m = multicast_init("224.1.1.2", src, dest);
+    mcast_t *m = multicast_init("224.1.1.1", src, dest);
 
     char *msg = argv[1];
     multicast_setup_recv(m);
-    //printf("==============\n");
-    //multicast_send(m, msg, strlen(msg));
-    //printf("==============\n");
+    printf("==============\n");
+    multicast_send(m, msg, strlen(msg));
+    printf("==============\n");
     while (1) {
-		//while (multicast_check_receive(m) == 0) {
-	    //	multicast_send(m, msg, strlen(msg));
-	    //	printf("repeat.. \n");
-		//}
+		while (multicast_check_receive(m) == 0) {
+	    	multicast_send(m, msg, strlen(msg));
+	    	printf("repeat.. \n");
+		}
 		printf("==============\n");
 		printf("%d\n", multicast_receive(m, buffer, 100));
 		printf("Received:  %s\r\n", buffer);

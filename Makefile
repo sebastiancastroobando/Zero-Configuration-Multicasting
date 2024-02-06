@@ -1,7 +1,7 @@
 CC = gcc
 TEST_FILES = multicast.c tester.c
-SEND_FILES = multicast.c zcs.c Seb-testers/seb_service.c
-RECV_FILES = multicast.c zcs.c Seb-testers/seb_app.c
+SEND_FILES = multicast.c zcs.c seb_service.c
+RECV_FILES = multicast.c zcs.c seb_app.c
 TEST_TARGET = tester
 SEND_TARGET0 = seb_service0
 SEND_TARGET1 = seb_service1

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  node1:
+    image: ubuntu
+    container_name: node1
+    volumes:
+      - /Users/sebastian/Documents/McGill/COMP535/COMP535-assignment1/COMP535-Assignment1:/shared_code
+    command: >
+      bash -c "apt-get update &&
+               apt-get install -y gcc iproute2 &&
+               while true; do sleep 1000; done"
+    stdin_open: true
+    tty: true
+
+  node2:
+    image: ubuntu
+    container_name: node2
+    volumes:
+      - /Users/sebastian/Documents/McGill/COMP535/COMP535-assignment1/COMP535-Assignment1:/shared_code
+    command: >
+      bash -c "apt-get update &&
+               apt-get install -y gcc iproute2 &&
+               while true; do sleep 1000; done"
+    stdin_open: true
+    tty: true
+
+  node3:
+    image: ubuntu
+    container_name: node3
+    volumes:
+      - /Users/sebastian/Documents/McGill/COMP535/COMP535-assignment1/COMP535-Assignment1:/shared_code
+    command: >
+      bash -c "apt-get update &&
+               apt-get install -y gcc iproute2 &&
+               while true; do sleep 1000; done"
+    stdin_open: true
+    tty: true

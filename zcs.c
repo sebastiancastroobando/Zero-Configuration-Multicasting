@@ -44,7 +44,6 @@ typedef struct {
 } zcs_reg_t;
 
 
-
 // Node object
 static zcs_node_t zcs_node; // should we also make it 
 pthread_t *heartbeatThread;
@@ -91,7 +90,6 @@ void free_node_attributes(zcs_node_t *node) {
 // @TODO: Verify there is no other memory that needs to be freed
 
 // ---------------------------------------------------------------------
-
 
 //@Description : Add timestamp to the log
 void add_log(zcs_node_t *node) {
@@ -228,6 +226,8 @@ int init_app() {
 			if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
 				printf("Notification received: %s\n", discovery_buffer);
 				// if we receive a notification, check if we have already received it
+				
+				// @FIXME
 				if (find_node(&local_reg, zcs_node.name) != -1) {
 					// we have already received the notification
 					continue;
@@ -262,7 +262,6 @@ int init_app() {
 				if (index != -1) {
 					// the node is in the local registry, update the log
 					add_log(&local_reg.nodes[index]);
-					// print the log for debugging
 				}
 			}
 		}
@@ -361,6 +360,7 @@ int zcs_init(int type) {
     // @TODO : should init_app be a thread? We want the app to keep listening and 
 	// logging the messages it receives...
 	if (type == ZCS_APP_TYPE) {
+		// @TODO : thead
 		init_app();
 	}
 	return 0;
@@ -468,6 +468,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		strcat(ad_msg, ";");
 		// send the ad
 		zcs_multicast_send(ad_msg);
+		
 		attempts++;
 		sleep(ad_rate);
 	}
@@ -555,15 +556,55 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
  * @brief Log the message to the console
 */
 void zcs_log() {
-	// the log function should print the logs of the registry
-	// FORMAT: "-----\n nodeName: node_name,\n UP: from timeA to timeB\n DOWN: from timeC to timeD\n UP: from timeE to timeF, ..."
-	// we will print the logs of all the nodes in the local registry
-	for (int i = 0; i < local_reg.num_nodes; i++) {
-		printf("---------------- LOGS for %s ----------------\n", local_reg.nodes[i].name);
-		// if the timestamp difference is greater than HEARTBEAT_INTERVAL +/- 1 sec, the node is down
-		
-		printf("---------------------------------------------\n");
-	}
+    printf("---- Node Status Logs ----\n");
+    for (int i = 0; i < local_reg.num_nodes; i++) {
+        zcs_node_t *node = &local_reg.nodes[i];
+        printf("Logs for %s:\n", node->name);
+        
+        if (node->log_count == 0) {
+            printf("No logs available.\n");
+            continue;
+        }
+
+        int current_index = node->oldest_log_index;
+        time_t current_time = node->log[current_index];
+        time_t next_time;
+        int isUp = 1; // Assuming the node starts in UP state
+        time_t upStartTime = current_time;
+        time_t downStartTime;
+
+        for (int j = 0; j < node->log_count; j++) {
+            int next_index = (current_index + 1) % LOG_SIZE;
+            next_time = node->log[next_index];
+
+            // Check if we have wrapped around
+            if (next_index == node->oldest_log_index) break;
+
+            double timeDiff = difftime(next_time, current_time);
+            if (isUp && timeDiff > HEARTBEAT_INTERVAL + 1) {
+                // Transition from UP to DOWN
+                printf("UP: %s -> %s\n", ctime(&upStartTime), ctime(&current_time));
+                downStartTime = current_time;
+                isUp = 0;
+            } else if (!isUp && timeDiff <= HEARTBEAT_INTERVAL + 1) {
+                // Transition from DOWN to UP
+                printf("DOWN: %s -> %s\n", ctime(&downStartTime), ctime(&current_time));
+                upStartTime = current_time;
+                isUp = 1;
+            }
+
+            current_index = next_index;
+            current_time = next_time;
+        }
+
+        // Handle the last sequence
+        if (isUp) {
+            printf("UP: %s -> now\n", ctime(&upStartTime));
+        } else {
+            printf("DOWN: %s -> now\n", ctime(&downStartTime));
+        }
+    }
+    printf("-------------------------\n");
 }
 
 int zcs_shutdown() {
@@ -594,4 +635,3 @@ int zcs_shutdown() {
     zcs_node.isOnline = 0;
     return 0;
 }
-

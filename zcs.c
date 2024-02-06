@@ -5,6 +5,7 @@
 #include <err.h>
 #include <math.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "multicast.h"
 #include "zcs.h"
@@ -21,6 +22,7 @@
 #define BUF_SIZE			1000 // TODO : 100 seems like too little, let's talk about this.
 #define MAX_SIZE			10 // max number of nodes
 #define MAX_MSG_SIZE		20 // max number of {attr_name, value} pairs
+#define LOG_SIZE			100 // max number of log entries per node (UP/DOWN)
 
 typedef struct {
 	char name[MAX_NAME_LEN];
@@ -30,6 +32,10 @@ typedef struct {
 	mcast_t *mrecv;
     int num_attributes;
     int isOnline;
+	// @TODO: should we do a struct for the log?
+	time_t log[LOG_SIZE];
+    int oldest_log_index;
+    int log_count;
 } zcs_node_t;
 
 typedef struct {
@@ -37,8 +43,10 @@ typedef struct {
 	int num_nodes;
 } zcs_reg_t;
 
+
+
 // Node object
-static zcs_node_t zcs_node;
+static zcs_node_t zcs_node; // should we also make it 
 pthread_t *heartbeatThread;
 pthread_t *notificationThread;
 zcs_reg_t local_reg;
@@ -79,9 +87,38 @@ void free_node_attributes(zcs_node_t *node) {
         node->attributes = NULL; 
     }
 }
+
+// @TODO: Verify there is no other memory that needs to be freed
+
 // ---------------------------------------------------------------------
 
+
+//@Description : Add timestamp to the log
+void add_log(zcs_node_t *node) {
+	if (node->log_count == LOG_SIZE) {
+		// we have reached the max number of log entries
+		// we need to remove the oldest log entry
+		node->log[node->oldest_log_index] = time(NULL);
+		node->oldest_log_index = (node->oldest_log_index + 1) % LOG_SIZE;
+	} else {
+		node->log[node->log_count++] = time(NULL);
+	}
+}
+
+
+// @Description : Check if the node is in the local registry
+// @Return : -1 if not found, index of the node if found
+int find_node(zcs_reg_t *reg, char *name) {
+	for (int i = 0; i < reg->num_nodes; i++) {
+		if (strcmp(reg->nodes[i].name, name) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 // @Description : Send a message to the multicast group and wait for a response
+// @TODO: Should we remove this function? It does not fit with our current design.
 void zcs_multicast_send(char *msg) {
 	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
 	// resend if not received
@@ -93,8 +130,11 @@ void zcs_multicast_send(char *msg) {
 
 // @Description : Split the key and value of a key-value pair
 void split_key_value(char *str, char **key, char **value) {
+	// split the string at the colon
+	// Format : "key:value"
 	*key = strtok(str, ":");
 	*value = strtok(NULL, ":");
+	return;
 }
 
 // @Description : Make a registry entry for a node
@@ -151,17 +191,23 @@ int make_reg_entry(char *data[], int dsize) {
 		strcpy(node->attributes[i-2].value, value);
 	}
 
+	// Start logging the node
+	node->log_count = 1;
+	node->oldest_log_index = 0;
+	node->log[node->log_count++] = time(NULL);
+
 	// fill local registry
 	local_reg.nodes[local_reg.num_nodes++] = *node;
 
 	return 0;
 }
 
-// @Description : Discover other nodes in the multicast group
-int discovery() {
+// @Description : Initialize the app listener thread
+// will send one discovery message at startup and listen for
+// notifications and heartbeats throughout the lifetime of the app
+int init_app() {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
-
     char discovery_msg[BUF_SIZE];
 	const char delim = ';'; 
 	char *token;
@@ -179,10 +225,13 @@ int discovery() {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
 			// print the received message
-			printf("Received: %s\n", discovery_buffer);
 			if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
-				// the message is a notification, we need to parse it
 				printf("Notification received: %s\n", discovery_buffer);
+				// if we receive a notification, check if we have already received it
+				if (find_node(&local_reg, zcs_node.name) != -1) {
+					// we have already received the notification
+					continue;
+				} 
 				char *str;
 				token = strtok(discovery_buffer, &delim);
 				dsize = 0;
@@ -193,6 +242,28 @@ int discovery() {
 				}
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
+			} else if (strstr(discovery_buffer, "msgType:HEARTBEAT;") != NULL) {
+				// the message is a heartbeat, we need to parse it
+				printf("Heartbeat received: %s\n", discovery_buffer);
+				// First throw away msgType:HEARTBEAT;
+				char *str;
+				str = strtok(discovery_buffer, ";");
+				str = strtok(NULL, ";");
+
+				// now we have nodeName:node_name
+
+				char *key, *value;
+				split_key_value(str, &key, &value);
+				// check if the node is in the local registry
+				// value is returning everything before the value, why?
+
+				int index = find_node(&local_reg, value);
+				
+				if (index != -1) {
+					// the node is in the local registry, update the log
+					add_log(&local_reg.nodes[index]);
+					// print the log for debugging
+				}
 			}
 		}
 	}
@@ -225,9 +296,8 @@ void* notification(void* arg) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			// print the check receive value
 			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
-			printf("Received: %s\n", buffer);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
-				printf("Message received for discovery, sending: %s\n", msg);
+				printf("Sending notification: %s\n", msg);
 				zcs_multicast_send(msg);
 			}
 		}
@@ -245,10 +315,8 @@ void* heartbeat(void* arg) {
 	strcat(heartbeat_msg, "\0");
 
     while(1) {
-        // example of heartbeat : "msgType:HEARTBEAT;nodeName:node_name"
-		// it doesn't make sense to use zcs_multicast_send here
-		// because we are not expecting a response
-		printf("sending heartbeat\n");
+		// not expecting any incoming messages, just send the heartbeat
+		printf("sending heartbeat...\n");
 		multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg)+1);
 		sleep(HEARTBEAT_INTERVAL);
     }
@@ -290,10 +358,10 @@ int zcs_init(int type) {
 	zcs_node.mrecv = mrecv;
     zcs_node.isOnline = 1; // set the node to offline
 
-    // An app needs to send a discovery message here to the multicast group
-	// because it will not call zcs_start. 
+    // @TODO : should init_app be a thread? We want the app to keep listening and 
+	// logging the messages it receives...
 	if (type == ZCS_APP_TYPE) {
-		discovery();
+		init_app();
 	}
 	return 0;
 }
@@ -487,10 +555,15 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
  * @brief Log the message to the console
 */
 void zcs_log() {
-	// TODO
-	// we have to maintain some sort of log which would look like this: 
-	// node_name:UP->DOWN->UP->UP->DOWN->UP ...
-	// see thread#23 for more details https://edstem.org/us/courses/52052/discussion/4170350
+	// the log function should print the logs of the registry
+	// FORMAT: "-----\n nodeName: node_name,\n UP: from timeA to timeB\n DOWN: from timeC to timeD\n UP: from timeE to timeF, ..."
+	// we will print the logs of all the nodes in the local registry
+	for (int i = 0; i < local_reg.num_nodes; i++) {
+		printf("---------------- LOGS for %s ----------------\n", local_reg.nodes[i].name);
+		// if the timestamp difference is greater than HEARTBEAT_INTERVAL +/- 1 sec, the node is down
+		
+		printf("---------------------------------------------\n");
+	}
 }
 
 int zcs_shutdown() {

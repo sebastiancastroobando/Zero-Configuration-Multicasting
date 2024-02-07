@@ -161,12 +161,12 @@ int make_reg_entry(char *data[], int dsize) {
 	node->num_attributes = dsize - 2;
 	// allocate memory for the attributes
 	node->attributes = (zcs_attribute_t*) malloc((dsize - 2) * sizeof(zcs_attribute_t));
-	
+	printf("before malloc mcheck\n");	
 	if (!node->attributes) {
 		perror("make_reg_entry: bad malloc\n");
 		exit(-1);
 	}
-
+	printf("right before for\n");
 	// fill the attributes
 	for (int i = 2; i < dsize; i++) {
 		split_key_value(data[i], &key, &value);
@@ -232,7 +232,7 @@ void* init_app(void* arg) {
 				if (find_node(&local_reg, zcs_node.name) != -1) {
 					// we have already received the notification
 					continue;
-				} 
+				}
 				char *str;
 				token = strtok(discovery_buffer, &delim);
 				dsize = 0;

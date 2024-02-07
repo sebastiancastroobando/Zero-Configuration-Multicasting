@@ -45,9 +45,10 @@ typedef struct {
 
 
 // Node object
-static zcs_node_t zcs_node; // should we also make it 
+static zcs_node_t zcs_node;
 pthread_t *heartbeatThread;
 pthread_t *notificationThread;
+pthread_t *appThread;
 zcs_reg_t local_reg;
 
 // ------------------- Helper functions (Debugging) -------------------
@@ -203,7 +204,7 @@ int make_reg_entry(char *data[], int dsize) {
 // @Description : Initialize the app listener thread
 // will send one discovery message at startup and listen for
 // notifications and heartbeats throughout the lifetime of the app
-int init_app() {
+void* init_app(void* arg) {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
     char discovery_msg[BUF_SIZE];
@@ -361,7 +362,15 @@ int zcs_init(int type) {
 	// logging the messages it receives...
 	if (type == ZCS_APP_TYPE) {
 		// @TODO : thead
-		init_app();
+		appThread = (pthread_t*) malloc(sizeof(pthread_t));
+		if (!appThread) {
+			perror("zcs_init: bad malloc\n");
+			return -1;
+		}
+		if (pthread_create(appThread, NULL, &init_app, NULL)) {
+			perror("zcs_init: bad pthread_create\n");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -619,6 +628,9 @@ int zcs_shutdown() {
 		pthread_cancel(*notificationThread);
 		free(notificationThread);
 	} else if (zcs_node.type == ZCS_APP_TYPE) {
+		pthread_join(*appThread, NULL);
+		pthread_cancel(*appThread);
+		free(appThread);
 		// print the local registry
 		print_local_reg(&local_reg);
 		// free the memory allocated for the local registry

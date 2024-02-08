@@ -114,17 +114,6 @@ int find_node(zcs_reg_t *reg, char *name) {
 	return -1;
 }
 
-// @Description : Send a message to the multicast group and wait for a response
-// @TODO: Should we remove this function? It does not fit with our current design.
-void zcs_multicast_send(char *msg) {
-	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
-	// resend if not received
-	while (multicast_check_receive(zcs_node.mrecv) == 0) {
-		printf("resend\n");
-		multicast_send(zcs_node.msend, msg, strlen(msg)+1);
-	}
-}
-
 // @Description : Split the key and value of a key-value pair
 void split_key_value(char *str, char **key, char **value) {
 	// split the string at the colon
@@ -272,22 +261,22 @@ void* init_app(void* arg) {
 // @Description : Send a notification at service startup and on discovery message
 void* notification(void* arg) {
 	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3"
-	char msg[BUF_SIZE];
+	char notif_msg[BUF_SIZE];
 	// buffer to hold received messages
 	char buffer[BUF_SIZE];
-	strcpy(msg, "msgType:NOTIFICATION;");
-	strcat(msg, "nodeName:");
-	strcat(msg, zcs_node.name);
-	strcat(msg, ";");
+	strcpy(notif_msg, "msgType:NOTIFICATION;");
+	strcat(notif_msg, "nodeName:");
+	strcat(notif_msg, zcs_node.name);
+	strcat(notif_msg, ";");
 	for (int i = 0; i < zcs_node.num_attributes; i++) {
-		strcat(msg, zcs_node.attributes[i].attr_name);
-		strcat(msg, ":");
-		strcat(msg, zcs_node.attributes[i].value);
-		strcat(msg, ";");
+		strcat(notif_msg, zcs_node.attributes[i].attr_name);
+		strcat(notif_msg, ":");
+		strcat(notif_msg, zcs_node.attributes[i].value);
+		strcat(notif_msg, ";");
 	}
 
 	// send the notification to the multicast group
-	multicast_send(zcs_node.msend, msg, strlen(msg)+1);
+	multicast_send(zcs_node.msend, notif_msg, strlen(notif_msg) + 1);
 
 	// wait for incoming messages DISCOVERY messages
 	while(1){
@@ -296,8 +285,8 @@ void* notification(void* arg) {
 			// print the check receive value
 			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
-				printf("Sending notification: %s\n", msg);
-				zcs_multicast_send(msg);
+				printf("Sending notification: %s\n", notif_msg);
+				multicast_send(zcs_node.msend, notif_msg, strlen(notif_msg)+1);
 			}
 		}
 	}
@@ -307,7 +296,6 @@ void* notification(void* arg) {
 // @Description : Send a heartbeat message to the multicast group
 void* heartbeat(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
-	char msg[BUF_SIZE];
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
@@ -472,8 +460,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		strcat(ad_msg, ad_value);
 		strcat(ad_msg, ";");
 		// send the ad
-		zcs_multicast_send(ad_msg);
-		
+		multicast_send(zcs_node.msend, ad_msg, strlen(ad_msg)+1);
 		attempts++;
 		sleep(ad_rate);
 	}

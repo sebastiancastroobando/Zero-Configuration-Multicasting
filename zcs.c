@@ -31,7 +31,6 @@ typedef struct {
     mcast_t *msend;
 	mcast_t *mrecv;
     int num_attributes;
-    int isOnline;
 	// @TODO: should we do a struct for the log?
 	time_t log[LOG_SIZE];
     int oldest_log_index;
@@ -56,7 +55,6 @@ zcs_reg_t local_reg;
 void print_node(zcs_node_t *node) {
 	printf("name: %s\n", node->name);
 	printf("type: %d\n", node->type);
-	printf("isOnline: %d\n", node->isOnline);
 	printf("num_attributes: %d\n", node->num_attributes);
 	for (int i = 0; i < node->num_attributes; i++) {
 		printf("attr_name: %s\n", node->attributes[i].attr_name);
@@ -157,7 +155,6 @@ int make_reg_entry(char *data[], int dsize) {
 	// put the node name in the node object
 	strcpy(node->name, value);
 	// fill the rest of the node object
-	node->isOnline = 0;
 	node->num_attributes = dsize - 2;
 	// allocate memory for the attributes
 	node->attributes = (zcs_attribute_t*) malloc((dsize - 2) * sizeof(zcs_attribute_t));
@@ -237,8 +234,14 @@ void* init_app(void* arg) {
 					strcpy(received_data[dsize++], token);
 					token = strtok(NULL, ";");
 				}
+
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
+
+				for (int i = 0; i < dsize; i++) {
+					free(received_data[i]);
+					received_data[i] = NULL;
+				}
 			} else if (strstr(discovery_buffer, "msgType:HEARTBEAT;") != NULL) {
 				// the message is a heartbeat, we need to parse it
 				printf("Heartbeat received: %s\n", discovery_buffer);
@@ -268,7 +271,7 @@ void* init_app(void* arg) {
 
 // @Description : Send a notification at service startup and on discovery message
 void* notification(void* arg) {
-	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;isOnline:0;attr1:val1;attr2:val2;attr3:val3"
+	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3"
 	char msg[BUF_SIZE];
 	// buffer to hold received messages
 	char buffer[BUF_SIZE];
@@ -352,7 +355,6 @@ int zcs_init(int type) {
 	zcs_node.type = type;
     zcs_node.msend = msend; // save the multicast object to the node object
 	zcs_node.mrecv = mrecv;
-    zcs_node.isOnline = 1; // set the node to offline
 
     // @TODO : should init_app be a thread? We want the app to keep listening and 
 	// logging the messages it receives...
@@ -401,8 +403,8 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 	}
 
 	// for services nodes, check if number of attributes are more than MAX_MSG_SIZE?
-	// should we do -3 to account for the nodeName, msgType, and isOnline?
-	if (num > MAX_MSG_SIZE - 3) {
+	// should we do -2 to account for the nodeName and msgType?
+	if (num > MAX_MSG_SIZE - 2) {
 		perror("zcs_start: too many attributes\n");
 		return -1;
 	}
@@ -416,8 +418,6 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
     // Copy the attributes to the node object
     memcpy(zcs_node.attributes, attr, num * sizeof(zcs_attribute_t));
     zcs_node.num_attributes = num;
-
-	zcs_node.isOnline = 0;
 
 	if (zcs_node.type == ZCS_SERVICE_TYPE) {
 		// create a listener thread that will listen for incoming DISCOVERY messages
@@ -623,6 +623,7 @@ int zcs_shutdown() {
 		pthread_join(*notificationThread, NULL);
 		pthread_cancel(*notificationThread);
 		free(notificationThread);
+		free_node_attributes(&zcs_node);
 	} else if (zcs_node.type == ZCS_APP_TYPE) {
 		pthread_join(*appThread, NULL);
 		pthread_cancel(*appThread);
@@ -634,14 +635,9 @@ int zcs_shutdown() {
         	free_node_attributes(&local_reg.nodes[i]);
 		}
 	}
-	// TODO: should this be done for both types?
-    // free the memory allocated for the attributes
-    free(zcs_node.attributes);
     // free the memory allocated for the multicast object
     multicast_destroy(zcs_node.msend);
 	multicast_destroy(zcs_node.mrecv);
-    // set the node to offline
-    zcs_node.isOnline = 0;
 
     return 0;
 }

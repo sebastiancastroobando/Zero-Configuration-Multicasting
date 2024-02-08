@@ -133,7 +133,6 @@ void split_key_value(char *str, char **key, char **value) {
 	// Format : "key:value"
 	*key = strtok(str, ":");
 	*value = strtok(NULL, ":");
-	return;
 }
 
 // @Description : Make a registry entry for a node
@@ -146,13 +145,14 @@ int make_reg_entry(char *data[], int dsize) {
 	zcs_node_t *node = (zcs_node_t*) malloc(sizeof(zcs_node_t));
 	if (!node) {
 		perror("make_reg_entry: bad malloc\n");
-		exit(-1);
+		exit(1);
 	}
 
 	// TODO : only an app will call this function, therefore we can assume that the type is a service?
 	node->type = ZCS_SERVICE_TYPE;
 	// parse the node name
 	char *key, *value;
+
 	split_key_value(data[1], &key, &value);
 	// put the node name in the node object
 	strcpy(node->name, value);
@@ -161,12 +161,10 @@ int make_reg_entry(char *data[], int dsize) {
 	node->num_attributes = dsize - 2;
 	// allocate memory for the attributes
 	node->attributes = (zcs_attribute_t*) malloc((dsize - 2) * sizeof(zcs_attribute_t));
-	printf("before malloc mcheck\n");	
 	if (!node->attributes) {
 		perror("make_reg_entry: bad malloc\n");
-		exit(-1);
+		exit(1);
 	}
-	printf("right before for\n");
 	// fill the attributes
 	for (int i = 2; i < dsize; i++) {
 		split_key_value(data[i], &key, &value);
@@ -175,14 +173,14 @@ int make_reg_entry(char *data[], int dsize) {
 		node->attributes[i-2].attr_name = (char *)malloc(strlen(key) + 1); // +1 for null terminator
 		if (node->attributes[i-2].attr_name == NULL) {
 			perror("Failed to allocate memory for attr_name\n");
-			exit(-1);
+			exit(1);
 		}
 
 		// Allocate memory for value and check for allocation success
 		node->attributes[i-2].value = (char *)malloc(strlen(value) + 1); // +1 for null terminator
 		if (node->attributes[i-2].value == NULL) {
 			perror("Failed to allocate memory for value\n");
-			exit(-1);
+			exit(1);
 		}
 
 		// Now that memory is allocated, copy the strings
@@ -208,10 +206,9 @@ void* init_app(void* arg) {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
     char discovery_msg[BUF_SIZE];
-	const char delim = ';'; 
-	char *token;
 	char *received_data[MAX_MSG_SIZE];
 	int dsize;
+	char *token;
 
 	strcpy(discovery_msg, "msgType:DISCOVERY;");
 
@@ -233,13 +230,12 @@ void* init_app(void* arg) {
 					// we have already received the notification
 					continue;
 				}
-				char *str;
-				token = strtok(discovery_buffer, &delim);
+				token = strtok(discovery_buffer, ";");
 				dsize = 0;
 				while (token != NULL) {
 					received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
 					strcpy(received_data[dsize++], token);
-					token = strtok(NULL, &delim);
+					token = strtok(NULL, ";");
 				}
 				// make a registry entry
 				make_reg_entry(received_data, dsize);

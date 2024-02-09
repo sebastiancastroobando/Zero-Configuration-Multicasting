@@ -205,7 +205,7 @@ void* init_app(void* arg) {
 	while(1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-
+			//printf("msg: %s\n", discovery_buffer);
 			// tokenize by ;
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;

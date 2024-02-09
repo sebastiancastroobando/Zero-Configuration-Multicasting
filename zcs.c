@@ -173,9 +173,9 @@ int make_reg_entry(char *data[], int dsize) {
 	}
 
 	// Start logging the node
-	node->log_count = 1;
+	node->log_count = 0;
 	node->oldest_log_index = 0;
-	node->log[node->log_count++] = time(NULL);
+	//node->log[node->log_count++] = time(NULL);
 
 	// fill local registry
 	local_reg.nodes[local_reg.num_nodes++] = *node;
@@ -549,52 +549,49 @@ int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 void zcs_log() {
     printf("---- Node Status Logs ----\n");
     for (int i = 0; i < local_reg.num_nodes; i++) {
-        zcs_node_t *node = &local_reg.nodes[i];
-        printf("Logs for %s:\n", node->name);
+        zcs_node_t node = local_reg.nodes[i];
+        printf("Logs for %s:\n", node.name);
         
-        if (node->log_count == 0) {
+        if (node.log_count == 0) {
             printf("No logs available.\n");
             continue;
         }
 
-        int current_index = node->oldest_log_index;
-        time_t current_time = node->log[current_index];
+        int start_index = node.oldest_log_index;
+		int next_index;
+        time_t current_time = node.log[start_index];
         time_t next_time;
-        int isUp = 1; // Assuming the node starts in UP state
-        time_t upStartTime = current_time;
-        time_t downStartTime;
-
-        for (int j = 0; j < node->log_count; j++) {
-            int next_index = (current_index + 1) % LOG_SIZE;
-            next_time = node->log[next_index];
+		int isUp = 1;
+        for (int j = 1; j < node.log_count; j++) {
+            next_index = (start_index + j) % LOG_SIZE;
+			next_time = node.log[next_index];
 
             // Check if we have wrapped around
-            if (next_index == node->oldest_log_index) break;
+            if (next_index == start_index) break;
 
             double timeDiff = difftime(next_time, current_time);
-            if (isUp && timeDiff > HEARTBEAT_INTERVAL + 1) {
+            if (timeDiff > HEARTBEAT_INTERVAL + 1) {
                 // Transition from UP to DOWN
-                printf("UP: %s -> %s\n", ctime(&upStartTime), ctime(&current_time));
-                downStartTime = current_time;
-                isUp = 0;
-            } else if (!isUp && timeDiff <= HEARTBEAT_INTERVAL + 1) {
+                printf("DOWN: %s ->", ctime(&current_time));
+				printf("%s\n", ctime(&next_time));
+				isUp = 0;
+            } else {
                 // Transition from DOWN to UP
-                printf("DOWN: %s -> %s\n", ctime(&downStartTime), ctime(&current_time));
-                upStartTime = current_time;
-                isUp = 1;
+                printf("UP: %s ->", ctime(&current_time));
+				printf("%s\n", ctime(&next_time));
+				isUp = 1;
             }
 
-            current_index = next_index;
             current_time = next_time;
         }
 
 
         // Handle the last sequence
         if (isUp) {
-            printf("UP: %s -> now\n", ctime(&upStartTime));
+            printf("UP: %s -> now\n", ctime(&current_time));
         } else {
-            printf("DOWN: %s -> now\n", ctime(&downStartTime));
-        }
+            printf("DOWN: %s -> now\n", ctime(&current_time));
+		}
     }
     printf("-------------------------\n");
 }

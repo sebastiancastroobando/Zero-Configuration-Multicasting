@@ -14,6 +14,8 @@
 #define ZCS_PORT			14500
 #define ZCS_CHANNEL1		"224.1.1.1"
 #define ZCS_CHANNEL2		"224.1.1.2"
+//#define ZCS_CHANNEL3		"224.1.1.3"
+//#define ZCS_CHANNEL4		"224.1.1.4"
 
 #define MAX_NAME_LEN		64
 #define MAX_AD_DURATION		10 // in seconds
@@ -30,6 +32,8 @@ typedef struct {
     zcs_attribute_t *attributes;
     mcast_t *msend;
 	mcast_t *mrecv;
+	//mcast_t *m_ad_send;
+	//mcast_t *m_ad_recv;
     int num_attributes;
 	// @TODO: should we do a struct for the log?
 	time_t log[LOG_SIZE];
@@ -42,11 +46,18 @@ typedef struct {
 	int num_nodes;
 } zcs_reg_t;
 
+typedef struct {
+	char *name;
+	zcs_cb_f cback;
+} zcs_thread_args;
+
 // Node object
 static zcs_node_t zcs_node;
 pthread_t *heartbeatThread;
 pthread_t *notificationThread;
 pthread_t *appThread;
+pthread_t *listenAdThread;
+zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
 
 // ------------------- Helper functions (Debugging) -------------------
@@ -205,7 +216,7 @@ void* init_app(void* arg) {
 	while(1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-
+			printf("msg: %s\n", discovery_buffer);
 			// tokenize by ;
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
@@ -214,6 +225,7 @@ void* init_app(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
+			printf("second: %s\n", received_data[1]);
 
 			// print the received message
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
@@ -305,6 +317,61 @@ void* heartbeat(void* arg) {
     }
 }
 
+// @Description: Needed to threadify listen_ad since otherwise it blocks shutdown
+void* listen_ad(void* arg) {
+	char msg[BUF_SIZE];
+	char *received_data[MAX_MSG_SIZE];
+	char *ad = "msgType:AD;";
+	char ad_name[BUF_SIZE];
+	char ad_value[BUF_SIZE];
+	char *token, *node_name_k, *node_name_v, *ad_name_k, *ad_name_v, *ad_value_k, *ad_value_v;
+	int dsize;
+
+	zcs_thread_args *args = (zcs_thread_args*) arg;
+	char *name = args->name;
+	zcs_cb_f cback = args->cback;
+	//memcpy(&name, &args->name, sizeof(args->name));
+	printf("name: %s\n", name);
+	//memcpy(&cback, &args->cback, sizeof(args->cback));
+
+	while (1) {
+		if (multicast_check_receive(zcs_node.mrecv) > 0) {
+			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
+
+			// tokenize by ;
+			token = strtok(msg, ";");
+			dsize = 0;
+			while (token != NULL) {
+				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
+				strcpy(received_data[dsize++], token);
+				token = strtok(NULL, ";");
+			}
+
+			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
+			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
+				printf("Received AD: %s\n", msg);
+				// the message is an ad, we need to check
+				// it nodeName matches the name we are listening to
+				// if not, ignore the message
+				split_key_value(received_data[1], &node_name_k, &node_name_v);
+				if (memcmp(name, node_name_v, sizeof(node_name_v) + sizeof(char)) == 0) {
+					// grab the adName and adValue
+					split_key_value(received_data[2], &ad_name_k, &ad_name_v);
+					split_key_value(received_data[3], &ad_value_k, &ad_value_v);
+					// call the callback function
+					cback(ad_name_v, ad_value_v);
+				}
+			}
+
+			// free receive data buffer
+			for (int i = 0; i < dsize; i++) {
+				free(received_data[i]);
+				received_data[i] = NULL;
+			}
+		}
+	}
+}
+
 /**
  * @brief Setup the parameters and initializations of necesasry components
  * @return 0 on success, -1 on failure
@@ -328,7 +395,8 @@ int zcs_init(int type) {
 	// For receiving, only the source port is needed
     mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
 	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
-    
+	//mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT + 2, ZCS_PORT + 3);
+	//mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL4, ZCS_PORT - 3, ZCS_PORT + 2);
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
@@ -341,6 +409,8 @@ int zcs_init(int type) {
 	zcs_node.type = type;
     zcs_node.msend = msend; // save the multicast object to the node object
 	zcs_node.mrecv = mrecv;
+	//zcs_node.m_ad_send = m_ad_send;
+	//zcs_node.m_ad_recv = m_ad_recv;
 
     // @TODO : should init_app be a thread? We want the app to keep listening and 
 	// logging the messages it receives...
@@ -471,52 +541,22 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
  * @return 0 on success, -1 on failure
 */
 int zcs_listen_ad(char *name, zcs_cb_f cback) {
-	// name is the name of the node that we want to listen to
-	// cback is the callback function that will be called when an ad is received
-	char msg[BUF_SIZE];
-	char *received_data[MAX_MSG_SIZE];
-	char *ad = "msgType:AD;";
-	char ad_name[BUF_SIZE];
-	char ad_value[BUF_SIZE];
-	char *token, *node_name_k, *node_name_v, *ad_name_k, *ad_name_v, *ad_value_k, *ad_value_v;
-	int dsize;
-	while (1) {
-		if (multicast_check_receive(zcs_node.mrecv) > 0) {
-			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
-
-			// tokenize by ;
-			token = strtok(msg, ";");
-			dsize = 0;
-			while (token != NULL) {
-				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
-				strcpy(received_data[dsize++], token);
-				token = strtok(NULL, ";");
-			}
-
-			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
-			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
-				printf("Received AD: %s\n", msg);
-				// the message is an ad, we need to check 
-				// it nodeName matches the name we are listening to
-				// if not, ignore the message
-				split_key_value(received_data[1], &node_name_k, &node_name_v);
-				if (memcmp(name, node_name_v, sizeof(node_name_v) + sizeof(char)) == 0) {
-					// grab the adName and adValue
-					split_key_value(received_data[2], &ad_name_k, &ad_name_v);
-					split_key_value(received_data[3], &ad_value_k, &ad_value_v);
-					// call the callback function
-					cback(ad_name_v, ad_value_v);
-				}
-			}
-
-			// free receive data buffer
-			for (int i = 0; i < dsize; i++) {
-				free(received_data[i]);
-				received_data[i] = NULL;
-			}
-		}
+	int ret = -1;
+	ad_args = (zcs_thread_args*) malloc(sizeof(zcs_thread_args));
+	if (zcs_node.type == ZCS_APP_TYPE) {
+		ad_args->name = name;
+		ad_args->cback = cback;
+		listenAdThread = (pthread_t*) malloc(sizeof(pthread_t));
+		if (!listenAdThread)
+			perror("zcs_listen_ad: bad malloc\n");
+		else if (pthread_create(listenAdThread, NULL, &listen_ad, (void*) ad_args))
+			perror("zcs_listen_ad: bad pthread_create\n");
+		else
+			ret = 0;
 	}
-	return 0;
+	sleep(1);
+	free(ad_args);
+	return ret;
 }
 
 /**
@@ -612,6 +652,9 @@ int zcs_shutdown() {
 		pthread_join(*appThread, NULL);
 		pthread_cancel(*appThread);
 		free(appThread);
+		pthread_join(*listenAdThread, NULL);
+		pthread_cancel(*listenAdThread);
+		free(listenAdThread);
 		// print the local registry
 		print_local_reg(&local_reg);
 		// free the memory allocated for the local registry
@@ -622,6 +665,8 @@ int zcs_shutdown() {
     // free the memory allocated for the multicast object
     multicast_destroy(zcs_node.msend);
 	multicast_destroy(zcs_node.mrecv);
+	//multicast_destroy(zcs_node.m_ad_send);
+	//multicast_destroy(zcs_node.m_ad_recv);
 
     return 0;
 }

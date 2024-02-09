@@ -105,11 +105,10 @@ void add_log(zcs_node_t *node) {
 
 // @Description : Check if the node is in the local registry
 // @Return : -1 if not found, index of the node if found
-int find_node(zcs_reg_t *reg, char *name) {
-	for (int i = 0; i < reg->num_nodes; i++) {
-		if (strcmp(reg->nodes[i].name, name) == 0) {
+int find_node(char *name) {
+	for (int i = 0; i < local_reg.num_nodes; i++) {
+		if (memcmp(local_reg.nodes[i].name, name, sizeof(name) + sizeof(char)) == 0)
 			return i;
-		}
 	}
 	return -1;
 }
@@ -139,7 +138,6 @@ int make_reg_entry(char *data[], int dsize) {
 	node->type = ZCS_SERVICE_TYPE;
 	// parse the node name
 	char *key, *value;
-
 	split_key_value(data[1], &key, &value);
 	// put the node name in the node object
 	strcpy(node->name, value);
@@ -194,7 +192,9 @@ void* init_app(void* arg) {
     char discovery_msg[BUF_SIZE];
 	char *received_data[MAX_MSG_SIZE];
 	int dsize;
-	char *token;
+	char *token, *key, *value;
+	char *notif = "msgType:NOTIFICATION";
+	char *heart = "msgType:HEARTBEAT";
 
 	strcpy(discovery_msg, "msgType:DISCOVERY;");
 
@@ -206,52 +206,49 @@ void* init_app(void* arg) {
 	while(1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
+
+			// delimit msg by individual identifiers
+			token = strtok(discovery_buffer, ";");
+			dsize = 0;
+			while (token != NULL) {
+				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
+				strcpy(received_data[dsize++], token);
+				token = strtok(NULL, ";");
+			}
+
 			// print the received message
-			if (strstr(discovery_buffer, "msgType:NOTIFICATION;") != NULL) {
-				printf("Notification received: %s\n", discovery_buffer);
+			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
+				printf("Notification received from: %s\n", received_data[1]);
 				// if we receive a notification, check if we have already received it
-				
 				// @FIXME
-				if (find_node(&local_reg, zcs_node.name) != -1) {
+				char *copy = (char*) malloc(sizeof(received_data[1]));
+				strcpy(copy, received_data[1]);
+				if (find_node(copy) != -1) {
+					printf("found node\n");
 					// we have already received the notification
 					continue;
 				}
-				token = strtok(discovery_buffer, ";");
-				dsize = 0;
-				while (token != NULL) {
-					received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
-					strcpy(received_data[dsize++], token);
-					token = strtok(NULL, ";");
-				}
-
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
-
-				for (int i = 0; i < dsize; i++) {
-					free(received_data[i]);
-					received_data[i] = NULL;
-				}
-			} else if (strstr(discovery_buffer, "msgType:HEARTBEAT;") != NULL) {
+			} else if (memcmp(received_data[0], heart, sizeof(heart) + sizeof(char)) == 0) {
 				// the message is a heartbeat, we need to parse it
-				printf("Heartbeat received: %s\n", discovery_buffer);
-				// First throw away msgType:HEARTBEAT;
-				char *str;
-				str = strtok(discovery_buffer, ";");
-				str = strtok(NULL, ";");
-
-				// now we have nodeName:node_name
-
-				char *key, *value;
-				split_key_value(str, &key, &value);
+				printf("Heartbeat received from: %s\n", received_data[1]);
+				split_key_value(received_data[1], &key, &value);
 				// check if the node is in the local registry
 				// value is returning everything before the value, why?
 
-				int index = find_node(&local_reg, value);
+				int index = find_node(value);
 				
 				if (index != -1) {
 					// the node is in the local registry, update the log
 					add_log(&local_reg.nodes[index]);
 				}
+			}
+
+			// free receive data buffer
+			for (int i = 0; i < dsize; i++) {
+				free(received_data[i]);
+				received_data[i] = NULL;
 			}
 		}
 	}
@@ -324,6 +321,8 @@ int zcs_init(int type) {
 		send_channel = ZCS_CHANNEL2;
 		recv_channel = ZCS_CHANNEL1;
 	}
+	// specify that there are no nodes in local registry
+	local_reg.num_nodes = 0;
 	
 	// create the multicast objects, one for sending and one for receiving
 	// For sending, only the destination port is needed

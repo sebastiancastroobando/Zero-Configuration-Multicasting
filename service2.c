@@ -10,7 +10,7 @@ int main() {
         { .attr_name = "make", .value = "Ikea"},
         { .attr_name = "model", .value = "FJALLBO"},
         { .attr_name = "led-color", .value = "Green"} };
-    rv = zcs_start("Whirlpool WD", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
+    rv = zcs_start("Big Ol' Decorations LTD", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
 
     
     zcs_shutdown();

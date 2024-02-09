@@ -223,11 +223,12 @@ void* init_app(void* arg) {
 				// @FIXME
 				char *copy = (char*) malloc(sizeof(received_data[1]));
 				strcpy(copy, received_data[1]);
-				if (find_node(copy) != -1) {
-					printf("found node\n");
+				split_key_value(copy, &key, &value);
+				if (find_node(value) != -1) {
 					// we have already received the notification
 					continue;
 				}
+				free(copy);
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
 			} else if (memcmp(received_data[0], heart, sizeof(heart) + sizeof(char)) == 0) {
@@ -561,7 +562,7 @@ void zcs_log() {
 		int next_index;
         time_t current_time = node.log[start_index];
         time_t next_time;
-		int isUp = 1;
+		int isUp = 0;
         for (int j = 1; j < node.log_count; j++) {
             next_index = (start_index + j) % LOG_SIZE;
 			next_time = node.log[next_index];

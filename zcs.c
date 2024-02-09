@@ -42,7 +42,6 @@ typedef struct {
 	int num_nodes;
 } zcs_reg_t;
 
-
 // Node object
 static zcs_node_t zcs_node;
 pthread_t *heartbeatThread;
@@ -207,7 +206,7 @@ void* init_app(void* arg) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
 
-			// delimit msg by individual identifiers
+			// tokenize by ;
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
@@ -220,7 +219,6 @@ void* init_app(void* arg) {
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
 				printf("Notification received from: %s\n", received_data[1]);
 				// if we receive a notification, check if we have already received it
-				// @FIXME
 				char *copy = (char*) malloc(sizeof(received_data[1]));
 				strcpy(copy, received_data[1]);
 				split_key_value(copy, &key, &value);
@@ -475,42 +473,46 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 int zcs_listen_ad(char *name, zcs_cb_f cback) {
 	// name is the name of the node that we want to listen to
 	// cback is the callback function that will be called when an ad is received
-	// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
-
 	char msg[BUF_SIZE];
+	char *received_data[MAX_MSG_SIZE];
+	char *ad = "msgType:AD;";
 	char ad_name[BUF_SIZE];
 	char ad_value[BUF_SIZE];
+	char *token, *node_name_k, *node_name_v, *ad_name_k, *ad_name_v, *ad_value_k, *ad_value_v;
+	int dsize;
 	while (1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
-			if (strstr(msg, "msgType:AD;") != NULL) {
+
+			// tokenize by ;
+			token = strtok(msg, ";");
+			dsize = 0;
+			while (token != NULL) {
+				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
+				strcpy(received_data[dsize++], token);
+				token = strtok(NULL, ";");
+			}
+
+			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
+			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
+				printf("Received AD: %s\n", msg);
 				// the message is an ad, we need to check 
 				// it nodeName matches the name we are listening to
 				// if not, ignore the message
-				char *str;
-				str = strtok(msg, ";");
-				// first check if the nodeName matches the name we are listening to
-				char *key, *value;
-				split_key_value(str, &key, &value);
-				if (strcmp(key, "nodeName") == 0 && strcmp(value, name) == 0) {
+				split_key_value(received_data[1], &node_name_k, &node_name_v);
+				if (memcmp(name, node_name_v, sizeof(node_name_v) + sizeof(char)) == 0) {
 					// grab the adName and adValue
-					str = strtok(NULL, ";"); // skip to the adName
-					split_key_value(str, &key, &value);
-					if (strcmp(key, "adName") == 0) {
-						strcpy(ad_name, value);
-					}
-					str = strtok(NULL, ";"); // skip to the adValue
-					split_key_value(str, &key, &value);
-					if (strcmp(key, "adValue") == 0) {
-						strcpy(ad_value, value);
-					}
+					split_key_value(received_data[2], &ad_name_k, &ad_name_v);
+					split_key_value(received_data[3], &ad_value_k, &ad_value_v);
 					// call the callback function
-					cback(ad_name, ad_value);
+					cback(ad_name_v, ad_value_v);
 				}
-				else {
-					// ignore the message, name does not match
-					continue;
-				}
+			}
+
+			// free receive data buffer
+			for (int i = 0; i < dsize; i++) {
+				free(received_data[i]);
+				received_data[i] = NULL;
 			}
 		}
 	}

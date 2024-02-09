@@ -531,17 +531,15 @@ int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen
 */
 int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 	// check if the node is in the local registry
-	for (int i = 0; i < local_reg.num_nodes; i++) {
-		if (strcmp(local_reg.nodes[i].name, name) == 0) {
-			// copy the attributes to the attr array
-			memcpy(attr, local_reg.nodes[i].attributes, local_reg.nodes[i].num_attributes * sizeof(zcs_attribute_t));
-			*num = local_reg.nodes[i].num_attributes;
-			// return the number of attributes
-			return *num;
-		}
+	int index = find_node(name);
+	int ret = -1;
+	if (index != -1) {
+		if (local_reg.nodes[index].num_attributes < *num)
+			*num = local_reg.nodes[index].num_attributes;
+		memcpy(attr, local_reg.nodes[index].attributes, *num * sizeof(zcs_attribute_t));
+		ret = 0;
 	}
-	// node not found
-	return -1;
+	return ret;
 }
 
 /**

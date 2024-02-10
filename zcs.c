@@ -631,12 +631,13 @@ void zcs_log() {
             current_time = next_time;
         }
 
-
         // Handle the last sequence
-        if (isUp) {
-            printf("UP: %s -> now\n", ctime(&current_time));
-        } else {
+		int now_time = time(NULL);
+		timeDiff = difftime(now_time, current_time);
+        if (timeDiff > HEARTBEAT_INTERVAL + 1) {
             printf("DOWN: %s -> now\n", ctime(&current_time));
+        } else {
+            printf("UP: %s -> now\n", ctime(&current_time));
 		}
     }
     printf("-------------------------\n");

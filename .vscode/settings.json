@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "multicast.h": "c",
-        "zcs.h": "c",
-        "cstddef": "c",
-        "stdio.h": "c",
-        "string.h": "c"
-    }
-}

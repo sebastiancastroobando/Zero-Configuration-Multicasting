@@ -1,5 +1,9 @@
 .DS_Store
 node*
 .vscode/
-tester
 .vscode
+tester
+service0
+service1
+service2
+app

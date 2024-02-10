@@ -96,9 +96,6 @@ void free_node_attributes(zcs_node_t *node) {
         node->attributes = NULL; 
     }
 }
-
-// @TODO: Verify there is no other memory that needs to be freed
-
 // ---------------------------------------------------------------------
 
 //@Description : Add timestamp to the log

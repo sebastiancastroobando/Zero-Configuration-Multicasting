@@ -1,11 +1,19 @@
 CC = gcc
-TEST_FILES = multicast.c tester.c
-SEND_FILES0 = multicast.c zcs.c service.c
-SEND_FILES1 = multicast.c zcs.c service1.c
-SEND_FILES2 = multicast.c zcs.c service2.c 
-RECV_FILES = multicast.c zcs.c app.c
+CUSTOM_TESTER_DIR = custom-tester/
+PROVIDED_TESTER_DIR = provided-testers/
+
+# Files in the parent directory
+PARENT_FILES = zzcs.c multicast.c
+
+# Updated file paths with parent directory files added where necessary
+TEST_FILES = multicast.c $(PROVIDED_TESTER_DIR)tester.c
+SEND_FILES0 = multicast.c zzcs.c $(CUSTOM_TESTER_DIR)service0.c
+SEND_FILES1 = multicast.c zzcs.c $(CUSTOM_TESTER_DIR)service1.c
+SEND_FILES2 = multicast.c zzcs.c $(CUSTOM_TESTER_DIR)service2.c
+RECV_FILES = multicast.c zzcs.c $(PROVIDED_TESTER_DIR)app.c
+
 TEST_TARGET = tester
-SEND_TARGET0 = service
+SEND_TARGET0 = service0
 SEND_TARGET1 = service1
 SEND_TARGET2 = service2
 RECV_TARGET = app

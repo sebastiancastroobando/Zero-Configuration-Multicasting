@@ -12,7 +12,7 @@ int main() {
         { .attr_name = "model", .value = "FJALLBO"},
         { .attr_name = "led-color", .value = "Green"} };
     rv = zcs_start("my-tree", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 3; i++) {
         printf("sending ad...\n");
         rv = zcs_post_ad("mute", "on");
         sleep(10);

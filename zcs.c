@@ -43,6 +43,8 @@ pthread_t *listenAdThread;
 zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
 
+volatile int keep_running = 1;
+
 // ------------------- Helper functions (Debugging) -------------------
 /**
  * @brief Print the node object
@@ -73,6 +75,7 @@ void print_local_reg(zcs_reg_t *reg) {
 void free_node_attributes(zcs_node_t *node) {
 	// free the memory allocated for the attributes and NULL the pointers
     if (node->attributes != NULL) {
+		printf("num_attrs: %d\n", node->num_attributes);
         for (int i = 0; i < node->num_attributes; i++) {
             free(node->attributes[i].attr_name); 
             node->attributes[i].attr_name = NULL; 
@@ -208,7 +211,7 @@ void* init_app(void* arg) {
 	multicast_send(zcs_node.msend, discovery_msg, strlen(discovery_msg)+1);
 
 	// wait for incoming messages NOTIFICATION messages
-	while(1) {
+	while(keep_running) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
 			// tokenize by ;
@@ -219,12 +222,12 @@ void* init_app(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
-			free(token);
+			//free(token);
 
 			// print the received message
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
 				// if we receive a notification, check if we have already received it
-				char *copy = (char*) malloc(sizeof(received_data[1]));
+				char *copy = (char*) malloc(strlen(received_data[1]) + 1);
 				strcpy(copy, received_data[1]);
 				split_key_value(copy, &key, &value);
 				if (find_node(value) != -1) {
@@ -254,7 +257,7 @@ void* init_app(void* arg) {
 			}
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 /**
@@ -281,7 +284,7 @@ void* notification(void* arg) {
 	multicast_send(zcs_node.msend, notif_msg, strlen(notif_msg) + 1);
 
 	// wait for incoming messages DISCOVERY messages
-	while(1){
+	while(keep_running){
 		// check for incoming messages
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			// print the check receive value
@@ -307,12 +310,13 @@ void* heartbeat(void* arg) {
 	strcat(heartbeat_msg, "\0");
 
 	sleep(1);
-    while(1) {
+    while(keep_running) {
 		// not expecting any incoming messages, just send the heartbeat
 		printf("sending heartbeat...\n");
 		multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg)+1);
 		sleep(HEARTBEAT_INTERVAL);
     }
+	return NULL;
 }
 
 /**
@@ -335,7 +339,7 @@ void* listen_ad(void* arg) {
 	printf("name: %s\n", name);
 	//memcpy(&cback, &args->cback, sizeof(args->cback));
 
-	while (1) {
+	while (keep_running) {
 		if (multicast_check_receive(zcs_node.m_ad_recv) > 0) {
 			multicast_receive(zcs_node.m_ad_recv, msg, BUF_SIZE);
 
@@ -347,7 +351,7 @@ void* listen_ad(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
-			free(token);
+			//free(token);
 
 			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
@@ -371,6 +375,7 @@ void* listen_ad(void* arg) {
 			}
 		}
 	}
+	return NULL;
 }
 
 /**
@@ -672,6 +677,9 @@ void zcs_log() {
 int zcs_shutdown() {
 	// free the memory allocated for the threads and join them
 	// only services will have threads
+
+	keep_running = 0;
+
 	if (zcs_node.type == ZCS_SERVICE_TYPE) {
 		pthread_join(*heartbeatThread, NULL);
 		pthread_cancel(*heartbeatThread);
@@ -679,21 +687,22 @@ int zcs_shutdown() {
 		pthread_join(*notificationThread, NULL);
 		pthread_cancel(*notificationThread);
 		free(notificationThread);
-		free_node_attributes(&zcs_node);
+		//free_node_attributes(&zcs_node);
 	} else if (zcs_node.type == ZCS_APP_TYPE) {
 		pthread_join(*appThread, NULL);
-		printf("joined\n");
-		pthread_cancel(*appThread);
+		//pthread_cancel(*appThread);
 		free(appThread);
-		pthread_join(*listenAdThread, NULL);
-		pthread_cancel(*listenAdThread);
-		free(listenAdThread);
-		// print the local registry
-		print_local_reg(&local_reg);
+		if (listenAdThread != NULL) {
+			pthread_join(*listenAdThread, NULL);
+			//pthread_cancel(*listenAdThread);
+			free(listenAdThread);
+		}
+		// print the local registry	print_local_reg(&local_reg);
 		// free the memory allocated for the local registry
 		for (int i = 0; i < local_reg.num_nodes; i++) {
         	free_node_attributes(&local_reg.nodes[i]);
 		}
+		//free_node_attributes(&zcs_node);
 	}
     // free the memory allocated for the multicast object
     multicast_destroy(zcs_node.msend);

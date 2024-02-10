@@ -22,7 +22,8 @@ int main() {
         if ((strcmp(attrs[1].attr_name, "location") == 0) && (strcmp(attrs[1].value, "kitchen") == 0)) {
                 rv = zcs_listen_ad(names[0], hello);
         }
+		// makes process sleep so that shutdown works properly
+		sleep(30);
     }
-	printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 	zcs_shutdown();
 }

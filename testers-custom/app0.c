@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
 			printf("value: %s\n", attrs[i].value);
 	}*/
 	//zcs_listen_ad("speaker-X", hello);
+	sleep(20);
 	printf("GGGGGGGGGGGGGGGGGGGG\n");
     zcs_shutdown();
 }

@@ -10,22 +10,6 @@
 #include "multicast.h"
 #include "zcs.h"
 
-// We need to know the port number of the ZCS multicast group
-#define ZCS_PORT			14500
-#define ZCS_PORT1			17500
-#define ZCS_CHANNEL1		"224.1.1.1"
-#define ZCS_CHANNEL2		"224.1.1.2"
-#define ZCS_CHANNEL3		"224.1.1.3"
-
-#define MAX_NAME_LEN		64
-#define MAX_AD_DURATION		10 // in seconds
-#define MAX_AD_ATTEMPTS		3 // number of attempts to send an ad
-#define HEARTBEAT_INTERVAL	5 // in seconds
-#define BUF_SIZE			1000 // TODO : 100 seems like too little, let's talk about this.
-#define MAX_SIZE			10 // max number of nodes
-#define MAX_MSG_SIZE		20 // max number of {attr_name, value} pairs
-#define LOG_SIZE			100 // max number of log entries per node (UP/DOWN)
-
 typedef struct {
 	char name[MAX_NAME_LEN];
     int type;
@@ -35,7 +19,6 @@ typedef struct {
 	mcast_t *m_ad_send;
 	mcast_t *m_ad_recv;
     int num_attributes;
-	// @TODO: should we do a struct for the log?
 	time_t log[LOG_SIZE];
     int oldest_log_index;
     int log_count;
@@ -61,7 +44,9 @@ zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
 
 // ------------------- Helper functions (Debugging) -------------------
-// @Description : Print the node object
+/**
+ * @brief Print the node object
+*/
 void print_node(zcs_node_t *node) {
 	printf("name: %s\n", node->name);
 	printf("type: %d\n", node->type);
@@ -71,7 +56,9 @@ void print_node(zcs_node_t *node) {
 		printf("value: %s\n", node->attributes[i].value);
 	}
 }
-// @Description : Print the local registry
+/**
+ * @brief Print the local registry
+*/
 void print_local_reg(zcs_reg_t *reg) {
 	for (int i = 0; i < reg->num_nodes; i++) {
 		print_node(&reg->nodes[i]);
@@ -80,7 +67,9 @@ void print_local_reg(zcs_reg_t *reg) {
 // ---------------------------------------------------------------------
 
 // --------------- Helper functions (Memory Management) ----------------
-// @Description : Free the memory allocated for the attributes
+/**
+ * @brief Free the memory allocated for the attributes of a node
+*/
 void free_node_attributes(zcs_node_t *node) {
 	// free the memory allocated for the attributes and NULL the pointers
     if (node->attributes != NULL) {
@@ -97,7 +86,9 @@ void free_node_attributes(zcs_node_t *node) {
 }
 // ---------------------------------------------------------------------
 
-//@Description : Add timestamp to the log
+/**
+ * @brief Add a log entry to the node
+*/
 void add_log(zcs_node_t *node) {
 	if (node->log_count == LOG_SIZE) {
 		// we have reached the max number of log entries
@@ -109,9 +100,10 @@ void add_log(zcs_node_t *node) {
 	}
 }
 
-
-// @Description : Check if the node is in the local registry
-// @Return : -1 if not found, index of the node if found
+/**
+ * @brief Find the index of a node in the local registry
+ * @return the index of the node in the local registry, -1 if not found
+*/
 int find_node(char *name) {
 	for (int i = 0; i < local_reg.num_nodes; i++) {
 		if (memcmp(local_reg.nodes[i].name, name, sizeof(name) + sizeof(char)) == 0)
@@ -120,15 +112,19 @@ int find_node(char *name) {
 	return -1;
 }
 
-// @Description : Split the key and value of a key-value pair
+/**
+ * @brief Split a string into key and value
+*/
 void split_key_value(char *str, char **key, char **value) {
-	// split the string at the colon
-	// Format : "key:value"
+	// Expected Format : "key:value"
 	*key = strtok(str, ":");
 	*value = strtok(NULL, ":");
 }
 
-// @Description : Make a registry entry for a node
+/**
+ * @brief Make a registry entry for a node
+ * @return 0 on success, 1 on failure
+*/
 int make_reg_entry(char *data[], int dsize) {
 	// example of data:
 	// data[0] = "msgType:NOTIFICATION"
@@ -190,9 +186,11 @@ int make_reg_entry(char *data[], int dsize) {
 	return 0;
 }
 
-// @Description : Initialize the app listener thread
-// will send one discovery message at startup and listen for
-// notifications and heartbeats throughout the lifetime of the app
+/**
+ * @brief Initialize the app listener thread
+ * @details The app listener thread will send one discovery message at startup and listen for notifications and heartbeats throughout the lifetime of the app
+ * @return 0 on success, -1 on failure
+*/
 void* init_app(void* arg) {
     // First send a discovery to the multicast group
     // need to encode who is sending the notification
@@ -213,7 +211,6 @@ void* init_app(void* arg) {
 	while(1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-			//printf("msg: %s\n", discovery_buffer);
 			// tokenize by ;
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
@@ -222,33 +219,27 @@ void* init_app(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
-			//printf("second: %s\n", received_data[1]);
 
 			// print the received message
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
-				//printf("Notification received from: %s\n", received_data[1]);
 				// if we receive a notification, check if we have already received it
 				char *copy = (char*) malloc(sizeof(received_data[1]));
 				strcpy(copy, received_data[1]);
 				split_key_value(copy, &key, &value);
 				if (find_node(value) != -1) {
-					// we have already received the notification
+					// we have already received the notification, ignore it
 					continue;
 				}
 				printf("notification receieved from: %s\n", value);
 				free(copy);
-				// make a registry entr
-				//printf("notification receieved from: %s\n", value);
+				// make a registry entry
 				make_reg_entry(received_data, dsize);
 			} else if (memcmp(received_data[0], heart, sizeof(heart) + sizeof(char)) == 0) {
 				// the message is a heartbeat, we need to parse it
 				printf("Heartbeat received from: %s\n", received_data[1]);
 				split_key_value(received_data[1], &key, &value);
 				// check if the node is in the local registry
-				// value is returning everything before the value, why?
-
 				int index = find_node(value);
-				
 				if (index != -1) {
 					// the node is in the local registry, update the log
 					add_log(&local_reg.nodes[index]);
@@ -265,7 +256,10 @@ void* init_app(void* arg) {
 	return 0;
 }
 
-// @Description : Send a notification at service startup and on discovery message
+/**
+ * @brief Send a notification to the multicast group
+ * @details This function will be called by the notification thread, which will send a notification at startup and on receiving a discovery message
+*/
 void* notification(void* arg) {
 	// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3"
 	char notif_msg[BUF_SIZE];
@@ -300,7 +294,10 @@ void* notification(void* arg) {
 	return NULL;
 }
 
-// @Description : Send a heartbeat message to the multicast group
+/**
+ * @brief Send a heartbeat to the multicast group
+ * @details This function will be called by the heartbeat thread, which will send a heartbeat at regular intervals
+*/
 void* heartbeat(void* arg) {
 	char heartbeat_msg[BUF_SIZE];
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
@@ -317,7 +314,10 @@ void* heartbeat(void* arg) {
     }
 }
 
-// @Description: Needed to threadify listen_ad since otherwise it blocks shutdown
+/**
+ * @brief Listen for ads with a given name
+ * @details This function is a thread that will only listen for ads with a given name on the ad multicast group
+*/
 void* listen_ad(void* arg) {
 	char msg[BUF_SIZE];
 	char *received_data[MAX_MSG_SIZE];
@@ -408,15 +408,13 @@ int zcs_init(int type) {
 	multicast_setup_recv(m_ad_recv);
 
 	zcs_node.type = type;
-    zcs_node.msend = msend; // save the multicast object to the node object
+    zcs_node.msend = msend; 			// save the multicast object to the node object for notifications, heartbeats, and discovery
 	zcs_node.mrecv = mrecv;
-	zcs_node.m_ad_send = m_ad_send;
+	zcs_node.m_ad_send = m_ad_send;		// save the multicast object to the node object for ads
 	zcs_node.m_ad_recv = m_ad_recv;
 
-    // @TODO : should init_app be a thread? We want the app to keep listening and 
 	// logging the messages it receives...
 	if (type == ZCS_APP_TYPE) {
-		// @TODO : thead
 		appThread = (pthread_t*) malloc(sizeof(pthread_t));
 		if (!appThread) {
 			perror("zcs_init: bad malloc\n");
@@ -431,7 +429,7 @@ int zcs_init(int type) {
 }
 
 /**
- * @brief Puts the node online
+ * @brief Puts a service node online
  * @return 0 on success, -1 on failure
 */
 int zcs_start(char *name, zcs_attribute_t attr[], int num) {
@@ -500,7 +498,7 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 }
 
 /**
- * @brief Puts the node offline
+ * @brief Post an ad to the ad multicast group
  * @return number of times the ad was posted, 0 on failure (no posting)
 */
 int zcs_post_ad(char *ad_name, char *ad_value) {
@@ -564,8 +562,9 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 }
 
 /**
- * @brief Scan for nodes with a given value for a given attribute. The names of the
- * nodes that match the query are returned in node_names
+ * @brief Scan for nodes with a given value for a given attribute.
+ * @details This function will scan the local registry for nodes that match the query
+ * @return the number of nodes that match the query
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
     sleep(1);
@@ -583,6 +582,7 @@ int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen
 
 /**
  * @brief get full list of attributes of a node that is return by a query
+ * @return 0 on success, -1 on failure
 */
 int zcs_get_attribs(char *name, zcs_attribute_t attr[], int *num) {
 	// check if the node is in the local registry
@@ -658,6 +658,11 @@ void zcs_log() {
     printf("-------------------------\n");
 }
 
+/**
+ * @brief Shutdown the node
+ * @return 0 on success, -1 on failure
+ * @todo we are not doing any error checking here...
+*/
 int zcs_shutdown() {
 	// free the memory allocated for the threads and join them
 	// only services will have threads

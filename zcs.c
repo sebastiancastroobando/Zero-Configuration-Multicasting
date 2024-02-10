@@ -12,9 +12,10 @@
 
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT			14500
+#define ZCS_PORT1			17500
 #define ZCS_CHANNEL1		"224.1.1.1"
 #define ZCS_CHANNEL2		"224.1.1.2"
-//#define ZCS_CHANNEL3		"224.1.1.3"
+#define ZCS_CHANNEL3		"224.1.1.3"
 //#define ZCS_CHANNEL4		"224.1.1.4"
 
 #define MAX_NAME_LEN		64
@@ -32,8 +33,8 @@ typedef struct {
     zcs_attribute_t *attributes;
     mcast_t *msend;
 	mcast_t *mrecv;
-	//mcast_t *m_ad_send;
-	//mcast_t *m_ad_recv;
+	mcast_t *m_ad_send;
+	mcast_t *m_ad_recv;
     int num_attributes;
 	// @TODO: should we do a struct for the log?
 	time_t log[LOG_SIZE];
@@ -216,7 +217,7 @@ void* init_app(void* arg) {
 	while(1) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-			printf("msg: %s\n", discovery_buffer);
+			//printf("msg: %s\n", discovery_buffer);
 			// tokenize by ;
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
@@ -225,11 +226,11 @@ void* init_app(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
-			printf("second: %s\n", received_data[1]);
+			//printf("second: %s\n", received_data[1]);
 
 			// print the received message
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
-				printf("Notification received from: %s\n", received_data[1]);
+				//printf("Notification received from: %s\n", received_data[1]);
 				// if we receive a notification, check if we have already received it
 				char *copy = (char*) malloc(sizeof(received_data[1]));
 				strcpy(copy, received_data[1]);
@@ -238,8 +239,10 @@ void* init_app(void* arg) {
 					// we have already received the notification
 					continue;
 				}
+				printf("notification receieved from: %s\n", value);
 				free(copy);
-				// make a registry entry
+				// make a registry entr
+				//printf("notification receieved from: %s\n", value);
 				make_reg_entry(received_data, dsize);
 			} else if (memcmp(received_data[0], heart, sizeof(heart) + sizeof(char)) == 0) {
 				// the message is a heartbeat, we need to parse it
@@ -335,8 +338,10 @@ void* listen_ad(void* arg) {
 	//memcpy(&cback, &args->cback, sizeof(args->cback));
 
 	while (1) {
-		if (multicast_check_receive(zcs_node.mrecv) > 0) {
-			multicast_receive(zcs_node.mrecv, msg, BUF_SIZE);
+		printf("before if\n");
+		if (multicast_check_receive(zcs_node.m_ad_send) > 0) {
+			printf("after if\n");
+			multicast_receive(zcs_node.m_ad_send, msg, BUF_SIZE);
 
 			// tokenize by ;
 			token = strtok(msg, ";");
@@ -395,8 +400,8 @@ int zcs_init(int type) {
 	// For receiving, only the source port is needed
     mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
 	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
-	//mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT + 2, ZCS_PORT + 3);
-	//mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL4, ZCS_PORT - 3, ZCS_PORT + 2);
+	mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 + 2, ZCS_PORT1 + 3);
+	mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 - 3, ZCS_PORT1 + 2);
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
@@ -409,8 +414,8 @@ int zcs_init(int type) {
 	zcs_node.type = type;
     zcs_node.msend = msend; // save the multicast object to the node object
 	zcs_node.mrecv = mrecv;
-	//zcs_node.m_ad_send = m_ad_send;
-	//zcs_node.m_ad_recv = m_ad_recv;
+	zcs_node.m_ad_send = m_ad_send;
+	zcs_node.m_ad_recv = m_ad_recv;
 
     // @TODO : should init_app be a thread? We want the app to keep listening and 
 	// logging the messages it receives...
@@ -528,7 +533,8 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		strcat(ad_msg, ad_value);
 		strcat(ad_msg, ";");
 		// send the ad
-		multicast_send(zcs_node.msend, ad_msg, strlen(ad_msg)+1);
+		multicast_send(zcs_node.m_ad_send, ad_msg, strlen(ad_msg)+1);
+		printf("sent: %s\n", ad_msg);
 		attempts++;
 		sleep(ad_rate);
 	}
@@ -665,8 +671,8 @@ int zcs_shutdown() {
     // free the memory allocated for the multicast object
     multicast_destroy(zcs_node.msend);
 	multicast_destroy(zcs_node.mrecv);
-	//multicast_destroy(zcs_node.m_ad_send);
-	//multicast_destroy(zcs_node.m_ad_recv);
+	multicast_destroy(zcs_node.m_ad_send);
+	multicast_destroy(zcs_node.m_ad_recv);
 
     return 0;
 }

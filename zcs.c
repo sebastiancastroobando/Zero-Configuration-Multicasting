@@ -608,28 +608,31 @@ void zcs_log() {
             continue;
         }
 
+		char start_time_str[9], end_time_str[9]; // Buffer to hold "HH:MM:SS\0"
         int start_index = node.oldest_log_index;
 		int next_index;
         time_t current_time = node.log[start_index];
         time_t next_time;
 		double timeDiff;
+
         for (int j = 1; j < node.log_count; j++) {
             next_index = (start_index + j) % LOG_SIZE;
 			next_time = node.log[next_index];
 
             // Check if we have wrapped around
             if (next_index == start_index) break;
+
+			strftime(start_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&current_time));
+			strftime(end_time_str, sizeof(end_time_str), "%H:%M:%S", localtime(&next_time));
 			
             timeDiff = difftime(next_time, current_time);
             if (timeDiff > HEARTBEAT_INTERVAL + 1) {
                 // Transition from UP to DOWN
-                printf("DOWN: %s ->", ctime(&current_time));
-				printf("%s\n", ctime(&next_time));
+                printf("DOWN : %s -> %s\n", start_time_str, end_time_str);
             } else {
                 // Transition from DOWN to UP
 
-                printf("UP: %s ->", ctime(&current_time));
-				printf("%s\n", ctime(&next_time));
+                printf("UP   : %s -> %s\n", start_time_str, end_time_str);
             }
 
             current_time = next_time;
@@ -638,10 +641,15 @@ void zcs_log() {
         // Handle the last sequence
 		int now_time = time(NULL);
 		timeDiff = difftime(now_time, current_time);
+
+		// format the current time to HH:MM:SS
+		char current_time_str[9];
+		strftime(current_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&current_time));
+
         if (timeDiff > HEARTBEAT_INTERVAL + 1) {
-            printf("DOWN: %s -> now\n", ctime(&current_time));
+            printf("DOWN : %s -> now\n", current_time_str);
         } else {
-            printf("UP: %s -> now\n", ctime(&current_time));
+            printf("UP   : %s -> now\n", current_time_str);
 		}
     }
     printf("-------------------------\n");

@@ -482,6 +482,7 @@ int zcs_start(char *name, zcs_attribute_t attr[], int num) {
 	if (zcs_node.type == ZCS_SERVICE_TYPE) {
 		// create a listener thread that will listen for incoming DISCOVERY messages
 		// and send a notification
+		// send notification
 		notificationThread = (pthread_t*) malloc(sizeof(pthread_t));
 		if (pthread_create(notificationThread, NULL, &notification, NULL) || !notificationThread) {
 			perror("zcs_start: pthread_create\n");
@@ -607,25 +608,24 @@ void zcs_log() {
 		int next_index;
         time_t current_time = node.log[start_index];
         time_t next_time;
-		int isUp = 0;
+		double timeDiff;
         for (int j = 1; j < node.log_count; j++) {
             next_index = (start_index + j) % LOG_SIZE;
 			next_time = node.log[next_index];
 
             // Check if we have wrapped around
             if (next_index == start_index) break;
-
-            double timeDiff = difftime(next_time, current_time);
+			
+            timeDiff = difftime(next_time, current_time);
             if (timeDiff > HEARTBEAT_INTERVAL + 1) {
                 // Transition from UP to DOWN
-                printf("DOWN: %s ->", ctime(&current_time));
+                printf("DOWN: %s ->\n", ctime(&current_time));
 				printf("%s\n", ctime(&next_time));
-				isUp = 0;
             } else {
                 // Transition from DOWN to UP
-                printf("UP: %s ->", ctime(&current_time));
+
+                printf("UP: %s ->\n", ctime(&current_time));
 				printf("%s\n", ctime(&next_time));
-				isUp = 1;
             }
 
             current_time = next_time;

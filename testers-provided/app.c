@@ -18,7 +18,6 @@ int main() {
 
 	    int anum = 5;
         rv = zcs_get_attribs(names[0], attrs, &anum);
-		printf("node_name: %s\n", names[0]);
         if ((strcmp(attrs[1].attr_name, "location") == 0) && (strcmp(attrs[1].value, "kitchen") == 0)) {
                 rv = zcs_listen_ad(names[0], hello);
         }

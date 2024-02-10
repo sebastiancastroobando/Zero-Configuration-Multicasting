@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "zcs.h"
-#include "multicast.h"
+#include "../zcs.h"
+#include "../multicast.h"
 
 char buffer[100];
 

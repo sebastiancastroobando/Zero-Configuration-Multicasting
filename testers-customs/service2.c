@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
-#include "zcs.h"
+#include "../zcs.h"
 
 int main() {
     int rv;

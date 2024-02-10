@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include "zcs.h"
+#include "../zcs.h"
 
 void hello(char *s, char *r) {
     printf("Ad received: %s, with value: %s\n", s, r);

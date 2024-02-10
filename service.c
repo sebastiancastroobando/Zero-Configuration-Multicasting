@@ -1,8 +1,6 @@
 #include <unistd.h>
 #include "zcs.h"
 
-int ZCS_SERVICE_TYPE = 2; // TODO: remove this, just for testing
-
 int main() {
     int rv;
     rv = zcs_init(ZCS_SERVICE_TYPE);

@@ -312,6 +312,7 @@ void* heartbeat(void* arg) {
 	strcat(heartbeat_msg, ";");
 	strcat(heartbeat_msg, "\0");
 
+	sleep(1);
     while(1) {
 		// not expecting any incoming messages, just send the heartbeat
 		printf("sending heartbeat...\n");
@@ -518,6 +519,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 	int attempts = 0;
 	int ad_rate = ceil(MAX_AD_DURATION / MAX_AD_ATTEMPTS);
 
+	sleep(1);
 	// we will send the ad at ad_rate intervals
 	while (attempts < MAX_AD_ATTEMPTS) {
 		// send the ad
@@ -619,12 +621,12 @@ void zcs_log() {
             timeDiff = difftime(next_time, current_time);
             if (timeDiff > HEARTBEAT_INTERVAL + 1) {
                 // Transition from UP to DOWN
-                printf("DOWN: %s ->\n", ctime(&current_time));
+                printf("DOWN: %s ->", ctime(&current_time));
 				printf("%s\n", ctime(&next_time));
             } else {
                 // Transition from DOWN to UP
 
-                printf("UP: %s ->\n", ctime(&current_time));
+                printf("UP: %s ->", ctime(&current_time));
 				printf("%s\n", ctime(&next_time));
             }
 

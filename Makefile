@@ -1,9 +1,9 @@
 CC = gcc
 TEST_FILES = multicast.c tester.c
-SEND_FILES0 = multicast.c zcs.c service0.c 
+SEND_FILES0 = multicast.c zcs.c service.c
 SEND_FILES1 = multicast.c zcs.c service1.c
 SEND_FILES2 = multicast.c zcs.c service2.c 
-RECV_FILES = multicast.c zcs.c app0.c
+RECV_FILES = multicast.c zcs.c app.c
 TEST_TARGET = tester
 SEND_TARGET0 = service
 SEND_TARGET1 = service1

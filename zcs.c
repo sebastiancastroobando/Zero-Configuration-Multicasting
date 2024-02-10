@@ -572,10 +572,17 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
  * nodes that match the query are returned in node_names
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
-    if (local_reg.num_nodes < namelen)
+    sleep(1);
+	int cnt = 0;
+	if (local_reg.num_nodes < namelen)
 		namelen = local_reg.num_nodes;
-	memcpy(node_names, local_reg.nodes, namelen * sizeof(zcs_node_t));
-	return namelen;
+	for (int i = 0; i < namelen; i++) {
+		if (strcmp(local_reg.nodes[i].attributes->attr_name, attr_name) == 0
+				&& strcmp(local_reg.nodes[i].attributes->value, attr_value) == 0) {
+			node_names[cnt++] = local_reg.nodes[i].name;
+		}
+	}
+	return cnt;
 }
 
 /**

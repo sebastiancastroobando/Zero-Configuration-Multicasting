@@ -12,12 +12,12 @@ Add functions here... (let's do this later when we have time).
 
 
 ## To Do
-- [.] `zcs_init()` calls `init_app()`, and this should be a thread
-- [.] `zcs_log()` test it.
-- [.] Double check `shutdown()`. In particular, which memory to free (app vs. service).
-- [.] line 230 : In `init_app()`, we are not checking the name of the incoming node, rather the name of the current node.
-- [.] listen and post AD, remove zcs_multicast_send() and use manual send instead.
-- [.] query function
-- [.] get attributes (check correcteness).
+- [x] `zcs_init()` calls `init_app()`, and this should be a thread
+- [x] `zcs_log()` test it.
+- [x] Double check `shutdown()`. In particular, which memory to free (app vs. service).
+- [x] line 230 : In `init_app()`, we are not checking the name of the incoming node, rather the name of the current node.
+- [x] listen and post AD, remove zcs_multicast_send() and use manual send instead.
+- [x] query function
+- [x] get attributes (check correcteness).
 - [ ] better comments
 - [ ] delete print statements.

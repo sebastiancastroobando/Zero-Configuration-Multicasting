@@ -16,7 +16,6 @@
 #define ZCS_CHANNEL1		"224.1.1.1"
 #define ZCS_CHANNEL2		"224.1.1.2"
 #define ZCS_CHANNEL3		"224.1.1.3"
-//#define ZCS_CHANNEL4		"224.1.1.4"
 
 #define MAX_NAME_LEN		64
 #define MAX_AD_DURATION		10 // in seconds

@@ -1,0 +1,434 @@
+==9853== Memcheck, a memory error detector
+==9853== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==9853== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==9853== Command: ./app
+==9853== 
+==9853== Thread 2:
+==9853== Invalid write of size 1
+==9853==    at 0x484C7AC: strcpy (vg_replace_strmem.c:561)
+==9853==    by 0x401ED9: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b648 is 0 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid write of size 1
+==9853==    at 0x484C7BE: strcpy (vg_replace_strmem.c:561)
+==9853==    by 0x401ED9: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b652 is 10 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x485109F: strcspn (vg_replace_strmem.c:1944)
+==9853==    by 0x490D6D0: strtok_r (strtok_r.c:64)
+==9853==    by 0x4019E5: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b648 is 0 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x490D6D6: strtok_r (strtok_r.c:65)
+==9853==    by 0x4019E5: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b648 is 0 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid write of size 1
+==9853==    at 0x490D6DB: strtok_r (strtok_r.c:72)
+==9853==    by 0x4019E5: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b648 is 0 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x490D703: strtok_r (strtok_r.c:47)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b649 is 1 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x485116E: strspn (vg_replace_strmem.c:1995)
+==9853==    by 0x490D6BB: strtok_r (strtok_r.c:56)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b649 is 1 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x490D6C0: strtok_r (strtok_r.c:57)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b649 is 1 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x485106A: strcspn (vg_replace_strmem.c:1944)
+==9853==    by 0x490D6D0: strtok_r (strtok_r.c:64)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b649 is 1 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x485109F: strcspn (vg_replace_strmem.c:1944)
+==9853==    by 0x490D6D0: strtok_r (strtok_r.c:64)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b64a is 2 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x490D6D6: strtok_r (strtok_r.c:65)
+==9853==    by 0x4019FB: split_key_value (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x401EF6: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b652 is 10 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x484C646: strlen (vg_replace_strmem.c:502)
+==9853==    by 0x48CA897: __vfprintf_internal (vfprintf-process-arg.c:397)
+==9853==    by 0x48BE96E: printf (printf.c:33)
+==9853==    by 0x401F27: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b649 is 1 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x484C654: strlen (vg_replace_strmem.c:502)
+==9853==    by 0x48CA897: __vfprintf_internal (vfprintf-process-arg.c:397)
+==9853==    by 0x48BE96E: printf (printf.c:33)
+==9853==    by 0x401F27: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b64a is 2 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x48EE369: _IO_new_file_xsputn (fileops.c:1218)
+==9853==    by 0x48EE369: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==9853==    by 0x48CA73E: outstring_func (vfprintf-internal.c:239)
+==9853==    by 0x48CA73E: __vfprintf_internal (vfprintf-process-arg.c:421)
+==9853==    by 0x48BE96E: printf (printf.c:33)
+==9853==    by 0x401F27: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b651 is 9 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x4850998: mempcpy (vg_replace_strmem.c:1696)
+==9853==    by 0x48EE31F: _IO_new_file_xsputn (fileops.c:1235)
+==9853==    by 0x48EE31F: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==9853==    by 0x48CA73E: outstring_func (vfprintf-internal.c:239)
+==9853==    by 0x48CA73E: __vfprintf_internal (vfprintf-process-arg.c:421)
+==9853==    by 0x48BE96E: printf (printf.c:33)
+==9853==    by 0x401F27: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b651 is 9 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+==9853== Invalid read of size 1
+==9853==    at 0x48509A5: mempcpy (vg_replace_strmem.c:1696)
+==9853==    by 0x48EE31F: _IO_new_file_xsputn (fileops.c:1235)
+==9853==    by 0x48EE31F: _IO_file_xsputn@@GLIBC_2.2.5 (fileops.c:1196)
+==9853==    by 0x48CA73E: outstring_func (vfprintf-internal.c:239)
+==9853==    by 0x48CA73E: __vfprintf_internal (vfprintf-process-arg.c:421)
+==9853==    by 0x48BE96E: printf (printf.c:33)
+==9853==    by 0x401F27: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853==  Address 0x4a4b64f is 7 bytes after a block of size 8 alloc'd
+==9853==    at 0x484380F: malloc (vg_replace_malloc.c:442)
+==9853==    by 0x401EBF: init_app (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x48F619C: start_thread (pthread_create.c:442)
+==9853==    by 0x4976E13: clone (clone.S:100)
+==9853== 
+notification receieved from: speaker-X
+node_name: speaker-X
+name: speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:21 -> 13:27:26
+UP   : 13:27:26 -> 13:27:31
+UP   : 13:27:31 -> now
+-------------------------
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:21 -> 13:27:26
+UP   : 13:27:26 -> 13:27:31
+UP   : 13:27:31 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:21 -> 13:27:26
+UP   : 13:27:26 -> 13:27:31
+UP   : 13:27:31 -> 13:27:36
+UP   : 13:27:36 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:26 -> 13:27:31
+UP   : 13:27:31 -> 13:27:36
+UP   : 13:27:36 -> 13:27:41
+UP   : 13:27:41 -> 13:27:46
+UP   : 13:27:46 -> 13:27:51
+UP   : 13:27:51 -> now
+-------------------------
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:26 -> 13:27:31
+UP   : 13:27:31 -> 13:27:36
+UP   : 13:27:36 -> 13:27:41
+UP   : 13:27:41 -> 13:27:46
+UP   : 13:27:46 -> 13:27:51
+UP   : 13:27:51 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:31 -> 13:27:36
+UP   : 13:27:36 -> 13:27:41
+UP   : 13:27:41 -> 13:27:46
+UP   : 13:27:46 -> 13:27:51
+UP   : 13:27:51 -> 13:27:56
+UP   : 13:27:56 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:46 -> 13:27:51
+UP   : 13:27:51 -> 13:27:56
+UP   : 13:27:56 -> 13:28:01
+UP   : 13:28:01 -> 13:28:06
+UP   : 13:28:06 -> 13:28:11
+UP   : 13:28:11 -> now
+-------------------------
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:46 -> 13:27:51
+UP   : 13:27:51 -> 13:27:56
+UP   : 13:27:56 -> 13:28:01
+UP   : 13:28:01 -> 13:28:06
+UP   : 13:28:06 -> 13:28:11
+UP   : 13:28:11 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:27:51 -> 13:27:56
+UP   : 13:27:56 -> 13:28:01
+UP   : 13:28:01 -> 13:28:06
+UP   : 13:28:06 -> 13:28:11
+UP   : 13:28:11 -> 13:28:16
+UP   : 13:28:16 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:01 -> 13:28:06
+UP   : 13:28:06 -> 13:28:11
+UP   : 13:28:11 -> 13:28:16
+UP   : 13:28:16 -> 13:28:21
+UP   : 13:28:21 -> 13:28:26
+UP   : 13:28:26 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:06 -> 13:28:11
+UP   : 13:28:11 -> 13:28:16
+UP   : 13:28:16 -> 13:28:21
+UP   : 13:28:21 -> 13:28:26
+UP   : 13:28:26 -> 13:28:31
+UP   : 13:28:31 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:11 -> 13:28:16
+UP   : 13:28:16 -> 13:28:21
+UP   : 13:28:21 -> 13:28:26
+UP   : 13:28:26 -> 13:28:31
+UP   : 13:28:31 -> 13:28:36
+UP   : 13:28:36 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:26 -> 13:28:31
+UP   : 13:28:31 -> 13:28:36
+UP   : 13:28:36 -> 13:28:41
+UP   : 13:28:41 -> 13:28:46
+UP   : 13:28:46 -> 13:28:51
+UP   : 13:28:51 -> now
+-------------------------
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:26 -> 13:28:31
+UP   : 13:28:31 -> 13:28:36
+UP   : 13:28:36 -> 13:28:41
+UP   : 13:28:41 -> 13:28:46
+UP   : 13:28:46 -> 13:28:51
+UP   : 13:28:51 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: off
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:31 -> 13:28:36
+UP   : 13:28:36 -> 13:28:41
+UP   : 13:28:41 -> 13:28:46
+UP   : 13:28:46 -> 13:28:51
+UP   : 13:28:51 -> 13:28:56
+UP   : 13:28:56 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:46 -> 13:28:51
+UP   : 13:28:51 -> 13:28:56
+UP   : 13:28:56 -> 13:29:01
+UP   : 13:29:01 -> 13:29:06
+UP   : 13:29:06 -> 13:29:11
+UP   : 13:29:11 -> now
+-------------------------
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:46 -> 13:28:51
+UP   : 13:28:51 -> 13:28:56
+UP   : 13:28:56 -> 13:29:01
+UP   : 13:29:01 -> 13:29:06
+UP   : 13:29:06 -> 13:29:11
+UP   : 13:29:11 -> now
+-------------------------
+Heartbeat received from: nodeName:speaker-X
+Ad received: mute, with value: on
+---- Node Status Logs ----
+Logs for speaker-X:
+UP   : 13:28:51 -> 13:28:56
+UP   : 13:28:56 -> 13:29:01
+UP   : 13:29:01 -> 13:29:06
+UP   : 13:29:06 -> 13:29:11
+UP   : 13:29:11 -> 13:29:16
+UP   : 13:29:16 -> now
+-------------------------
+^C==9853== 
+==9853== Process terminating with default action of signal 2 (SIGINT)
+==9853==    at 0x48F2D86: __futex_abstimed_wait_common64 (futex-internal.c:57)
+==9853==    by 0x48F2D86: __futex_abstimed_wait_common (futex-internal.c:87)
+==9853==    by 0x48F7C72: __pthread_clockjoin_ex (pthread_join_common.c:102)
+==9853==    by 0x40318A: zcs_shutdown (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853==    by 0x40336B: main (in /home/daleks/Personal/COMP535/COMP535-Assignment1/app)
+==9853== 
+==9853== HEAP SUMMARY:
+==9853==     in use at exit: 4,433 bytes in 24 blocks
+==9853==   total heap usage: 335 allocs, 311 frees, 13,691 bytes allocated
+==9853== 
+==9853== LEAK SUMMARY:
+==9853==    definitely lost: 176 bytes in 1 blocks
+==9853==    indirectly lost: 0 bytes in 0 blocks
+==9853==      possibly lost: 544 bytes in 2 blocks
+==9853==    still reachable: 3,713 bytes in 21 blocks
+==9853==         suppressed: 0 bytes in 0 blocks
+==9853== Rerun with --leak-check=full to see details of leaked memory
+==9853== 
+==9853== For lists of detected and suppressed errors, rerun with: -s
+==9853== ERROR SUMMARY: 56 errors from 16 contexts (suppressed: 0 from 0)

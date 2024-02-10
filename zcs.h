@@ -26,7 +26,7 @@ typedef void (*zcs_cb_f)(char *, char *);
 #define BUF_SIZE			1000    // TODO : 100 seems like too little, let's talk about this.
 #define MAX_SIZE			10      // max number of nodes
 #define MAX_MSG_SIZE		20      // max number of {attr_name, value} pairs
-#define LOG_SIZE			100     // max number of log entries per node (UP/DOWN)
+#define LOG_SIZE			6		// max number of log entries per node (UP/DOWN)
 
 
 int zcs_init(int type);

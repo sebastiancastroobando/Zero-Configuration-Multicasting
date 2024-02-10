@@ -90,7 +90,7 @@ void free_node_attributes(zcs_node_t *node) {
  * @brief Add a log entry to the node
 */
 void add_log(zcs_node_t *node) {
-	if (node->log_count == LOG_SIZE) {
+	if (node->log_count >= LOG_SIZE) {
 		// we have reached the max number of log entries
 		// we need to remove the oldest log entry
 		node->log[node->oldest_log_index] = time(NULL);
@@ -349,7 +349,6 @@ void* listen_ad(void* arg) {
 
 			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
-				printf("Received AD: %s\n", msg);
 				// the message is an ad, we need to check
 				// it nodeName matches the name we are listening to
 				// if not, ignore the message
@@ -617,13 +616,18 @@ void zcs_log() {
         time_t current_time = node.log[start_index];
         time_t next_time;
 		double timeDiff;
+		/*printf(">>>>>>>>>>>>>>>>>>>>>>\n");
+		for (int i = 0; i < node.log_count; i++) {
+			printf("time: %s ", ctime(&node.log[i]));
+		}
+		printf(">>>>>>>>>>>>>>>>>>>>>>\n");
 
+		*/
         for (int j = 1; j < node.log_count; j++) {
             next_index = (start_index + j) % LOG_SIZE;
 			next_time = node.log[next_index];
 
-            // Check if we have wrapped around
-            if (next_index == start_index) break;
+			//printf("pre_start: %d pre_next: %d\n", start_index, next_index);
 
 			strftime(start_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&current_time));
 			strftime(end_time_str, sizeof(end_time_str), "%H:%M:%S", localtime(&next_time));

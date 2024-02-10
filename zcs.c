@@ -219,6 +219,7 @@ void* init_app(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
+			free(token);
 
 			// print the received message
 			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
@@ -346,6 +347,7 @@ void* listen_ad(void* arg) {
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");
 			}
+			free(token);
 
 			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
@@ -680,6 +682,7 @@ int zcs_shutdown() {
 		free_node_attributes(&zcs_node);
 	} else if (zcs_node.type == ZCS_APP_TYPE) {
 		pthread_join(*appThread, NULL);
+		printf("joined\n");
 		pthread_cancel(*appThread);
 		free(appThread);
 		pthread_join(*listenAdThread, NULL);

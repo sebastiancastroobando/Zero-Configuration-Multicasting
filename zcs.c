@@ -338,10 +338,8 @@ void* listen_ad(void* arg) {
 	//memcpy(&cback, &args->cback, sizeof(args->cback));
 
 	while (1) {
-		printf("before if\n");
-		if (multicast_check_receive(zcs_node.m_ad_send) > 0) {
-			printf("after if\n");
-			multicast_receive(zcs_node.m_ad_send, msg, BUF_SIZE);
+		if (multicast_check_receive(zcs_node.m_ad_recv) > 0) {
+			multicast_receive(zcs_node.m_ad_recv, msg, BUF_SIZE);
 
 			// tokenize by ;
 			token = strtok(msg, ";");
@@ -400,8 +398,8 @@ int zcs_init(int type) {
 	// For receiving, only the source port is needed
     mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
 	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
-	mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 + 2, ZCS_PORT1 + 3);
-	mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 - 3, ZCS_PORT1 + 2);
+	mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT1, ZCS_PORT1 + 1);
+	mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 - 1, ZCS_PORT1);
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
@@ -410,6 +408,7 @@ int zcs_init(int type) {
 
 	// setup the receive multicast object
 	multicast_setup_recv(mrecv);
+	multicast_setup_recv(m_ad_recv);
 
 	zcs_node.type = type;
     zcs_node.msend = msend; // save the multicast object to the node object

@@ -4,7 +4,7 @@
 #include "../zcs.h"
 
 void hello(char *s, char *r) {
-	printf("HELLO FROM APP ONE\n");
+	printf("Received ad.\n");
     printf("Ad received: %s, with value: %s\n", s, r);
 }
 

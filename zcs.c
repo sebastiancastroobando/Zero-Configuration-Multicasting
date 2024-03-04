@@ -264,9 +264,13 @@ void* init_app(void* arg) {
 				split_key_value(received_data[1], &key, &value); // key = nodeName, value = node_name
 				if (memcmp(ad_args->name, value, sizeof(value) + sizeof(char)) == 0) {
 					split_key_value(received_data[2], &key, &value); // key = adName, value = ad_name
+					// get adName
+					char *adName = value;
 					split_key_value(received_data[3], &key, &value); // key = adValue, value = ad_value
+					// get adValue
+					char *adValue = value;
 					// call the callback function
-					ad_args->cback(received_data[2], received_data[3]); 
+					ad_args->cback(adName, adValue); 
 				}
 			}
 
@@ -664,14 +668,13 @@ int zcs_shutdown() {
 		}
 		// check if ad_args is not NULL
 		if (ad_args != NULL) {
+			// free(ad_args);
 			free(ad_args);
 		}
 	}
     // free the memory allocated for the multicast object
     multicast_destroy(zcs_node.msend);
 	multicast_destroy(zcs_node.mrecv);
-	multicast_destroy(zcs_node.m_ad_send);
-	multicast_destroy(zcs_node.m_ad_recv);
 
     return 0;
 }

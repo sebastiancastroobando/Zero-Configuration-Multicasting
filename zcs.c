@@ -37,8 +37,7 @@ typedef struct {
 	zcs_cb_f cback;
 } zcs_thread_args;
 
-// all of the memory the current library instance
-// shares between threads
+// All of the memory the current library instance shares between threads
 static zcs_node_t zcs_node;
 pthread_t *heartbeatThread;
 pthread_t *notificationThread;
@@ -46,10 +45,13 @@ pthread_t *appThread;
 pthread_t *listenAdThread;
 zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
+pthread_mutex_t msend_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for msend and mrecv
+volatile int listenToAd = 0; // listenToAd flag to let the app know that it should listen for ads
 
-// to ensure graceful library termination,
-// used in shutdown
-volatile int keep_running = 1;
+
+// To ensure graceful library termination, used to signal threads to stop
+// volatile to ensure that the compiler does not optimize it away
+volatile int keep_running = 1; 
 
 // ------------------- Helper functions (Debugging) -------------------
 /**
@@ -204,8 +206,6 @@ void* init_app(void* arg) {
 	char *received_data[MAX_MSG_SIZE];
 	int dsize;
 	char *token, *key, *value;
-	char *notif = "msgType:NOTIFICATION";
-	char *heart = "msgType:HEARTBEAT";
 
 	strcpy(discovery_msg, "msgType:DISCOVERY;");
 
@@ -213,11 +213,11 @@ void* init_app(void* arg) {
 
 	multicast_send(zcs_node.msend, discovery_msg, strlen(discovery_msg)+1);
 
-	// wait for incoming messages NOTIFICATION messages
+	// Poll for incoming messages
 	while(keep_running) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-			// tokenize by ;
+			// tokenize by semi-colon
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
@@ -226,8 +226,8 @@ void* init_app(void* arg) {
 				token = strtok(NULL, ";");
 			}
 
-			// print the received message
-			if (memcmp(received_data[0], notif, sizeof(notif) + sizeof(char)) == 0) {
+			if (memcmp(received_data[0], "msgType:NOTIFICATION", sizeof("msgType:NOTIFICATION") + sizeof(char)) == 0) {
+				// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3..."
 				// if we receive a notification, check if we have already received it
 				char *copy = (char*) malloc(strlen(received_data[1]) + 1);
 				strcpy(copy, received_data[1]);
@@ -245,7 +245,9 @@ void* init_app(void* arg) {
 				free(copy);
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
-			} else if (memcmp(received_data[0], heart, sizeof(heart) + sizeof(char)) == 0) {
+			} 
+			else if (memcmp(received_data[0], "msgType:HEARTBEAT", sizeof("msgType:HEARTBEAT") + sizeof(char)) == 0) {
+				// FORMAT: "msgType:HEARTBEAT;nodeName:node_name"
 				// the message is a heartbeat, we need to parse it
 				split_key_value(received_data[1], &key, &value);
 				// check if the node is in the local registry
@@ -253,6 +255,18 @@ void* init_app(void* arg) {
 				if (index != -1) {
 					// the node is in the local registry, update the log
 					add_log(local_reg.nodes[index]);
+				}
+			}
+			else if (memcmp(received_data[0], "msgType:AD", sizeof("msgType:AD") + sizeof(char)) == 0 && listenToAd == 1) {
+				// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
+				// the message is an ad, we need to check if nodeName matches the name we are listening to
+				// if not, ignore the message
+				split_key_value(received_data[1], &key, &value); // key = nodeName, value = node_name
+				if (memcmp(ad_args->name, value, sizeof(value) + sizeof(char)) == 0) {
+					split_key_value(received_data[2], &key, &value); // key = adName, value = ad_name
+					split_key_value(received_data[3], &key, &value); // key = adValue, value = ad_value
+					// call the callback function
+					ad_args->cback(received_data[2], received_data[3]); 
 				}
 			}
 
@@ -297,7 +311,11 @@ void* notification(void* arg) {
 			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
 				printf("sending notification...\n");
+				// send the notification to the multicast group
+				// lock the msend mutex to ensure that it does not interfere with another thread
+				pthread_mutex_lock(&msend_mutex);
 				multicast_send(zcs_node.msend, notif_msg, strlen(notif_msg)+1);
+				pthread_mutex_unlock(&msend_mutex);
 			}
 		}
 	}
@@ -319,64 +337,13 @@ void* heartbeat(void* arg) {
     while(keep_running) {
 		// not expecting any incoming messages, just send the heartbeat
 		printf("sending heartbeat...\n");
+		// send the heartbeat to the multicast group
+		// lock the msend mutex to ensure that it does not interfere with another thread
+		pthread_mutex_lock(&msend_mutex);
 		multicast_send(zcs_node.msend, heartbeat_msg, strlen(heartbeat_msg)+1);
+		pthread_mutex_unlock(&msend_mutex);
 		sleep(HEARTBEAT_INTERVAL);
     }
-	return NULL;
-}
-
-/**
- * @brief Listen for ads with a given name
- * @details This function is a thread that will only listen for ads with a given name on the ad multicast group
-*/
-void* listen_ad(void* arg) {
-	char msg[BUF_SIZE];
-	char *received_data[MAX_MSG_SIZE];
-	char *ad = "msgType:AD;";
-	char ad_name[BUF_SIZE];
-	char ad_value[BUF_SIZE];
-	char *token, *node_name_k, *node_name_v, *ad_name_k, *ad_name_v, *ad_value_k, *ad_value_v;
-	int dsize;
-
-	zcs_thread_args *args = (zcs_thread_args*) arg;
-	char *name = args->name;
-	zcs_cb_f cback = args->cback;
-
-	while (keep_running) {
-		if (multicast_check_receive(zcs_node.m_ad_recv) > 0) {
-			multicast_receive(zcs_node.m_ad_recv, msg, BUF_SIZE);
-
-			// tokenize by ;
-			token = strtok(msg, ";");
-			dsize = 0;
-			while (token != NULL) {
-				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
-				strcpy(received_data[dsize++], token);
-				token = strtok(NULL, ";");
-			}
-
-			// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
-			if (memcmp(received_data[0], ad, sizeof(ad) + sizeof(char)) == 0) {
-				// the message is an ad, we need to check
-				// it nodeName matches the name we are listening to
-				// if not, ignore the message
-				split_key_value(received_data[1], &node_name_k, &node_name_v);
-				if (memcmp(name, node_name_v, sizeof(node_name_v) + sizeof(char)) == 0) {
-					// grab the adName and adValue
-					split_key_value(received_data[2], &ad_name_k, &ad_name_v);
-					split_key_value(received_data[3], &ad_value_k, &ad_value_v);
-					// call the callback function
-					cback(ad_name_v, ad_value_v);
-				}
-			}
-
-			// free receive data buffer
-			for (int i = 0; i < dsize; i++) {
-				free(received_data[i]);
-				received_data[i] = NULL;
-			}
-		}
-	}
 	return NULL;
 }
 
@@ -524,8 +491,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 	int attempts = 0;
 	int ad_rate = ceil(MAX_AD_DURATION / MAX_AD_ATTEMPTS);
 
-	sleep(1);
-	// we will send the ad at ad_rate intervals
+	// Send the ad to the multicast group at ad_rate intervals
 	while (attempts < MAX_AD_ATTEMPTS) {
 		// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value" ? 
 		char ad_msg[BUF_SIZE];
@@ -536,8 +502,13 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		strcat(ad_msg, ";adValue:");
 		strcat(ad_msg, ad_value);
 		strcat(ad_msg, ";");
-		printf("sendind ad...\n");
-		multicast_send(zcs_node.m_ad_send, ad_msg, strlen(ad_msg)+1);
+
+		// send the ad to the multicast group, but first lock the msend mutex
+		// this is to ensure that it does interfere with another thread
+		pthread_mutex_lock(&msend_mutex);
+		multicast_send(zcs_node.msend, ad_msg, strlen(ad_msg)+1);
+		pthread_mutex_unlock(&msend_mutex);
+		// multicast_send(zcs_node.m_ad_send, ad_msg, strlen(ad_msg)+1);
 		attempts++;
 		sleep(ad_rate);
 	}
@@ -546,25 +517,25 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 }
 
 /**
- * @brief Listen for ads with a given name
+ * @brief Signals the app to listen for ads with a given name
  * @return 0 on success, -1 on failure
 */
 int zcs_listen_ad(char *name, zcs_cb_f cback) {
 	int ret = -1;
+	// create a thread that will listen for ads
 	ad_args = (zcs_thread_args*) malloc(sizeof(zcs_thread_args));
+
+	// check if the node is an app
 	if (zcs_node.type == ZCS_APP_TYPE) {
 		ad_args->name = name;
 		ad_args->cback = cback;
-		listenAdThread = (pthread_t*) malloc(sizeof(pthread_t));
-		if (!listenAdThread)
-			perror("zcs_listen_ad: bad malloc\n");
-		else if (pthread_create(listenAdThread, NULL, &listen_ad, (void*) ad_args))
-			perror("zcs_listen_ad: bad pthread_create\n");
-		else
-			ret = 0;
+		// set the listenToAd flag to 1, this will allow the app to listen for ads
+		listenToAd = 1;
+	} else {
+		perror("zcs_listen_ad: node is not an app\n");
 	}
-	sleep(1);
-	free(ad_args);
+	// free(ad_args); we should not free ad_args, it is used by the thread
+	// free it in the shutdown function
 	return ret;
 }
 
@@ -682,18 +653,19 @@ int zcs_shutdown() {
 		free(zcs_node.attributes);
 	} else if (zcs_node.type == ZCS_APP_TYPE) {
 		pthread_join(*appThread, NULL);
-		//pthread_cancel(*appThread);
 		free(appThread);
 		if (listenAdThread != NULL) {
 			pthread_join(*listenAdThread, NULL);
-			//pthread_cancel(*listenAdThread);
 			free(listenAdThread);
 		}
-		// print the local registry	print_local_reg(&local_reg);
 		// free the memory allocated for the local registry
 		for (int i = 0; i < local_reg.num_nodes; i++) {
 			free_node_attributes(local_reg.nodes[i]);
 			free(local_reg.nodes[i]);
+		}
+		// check if ad_args is not NULL
+		if (ad_args != NULL) {
+			free(ad_args);
 		}
 	}
     // free the memory allocated for the multicast object

@@ -505,6 +505,7 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		// send the ad to the multicast group, but first lock the msend mutex
 		// this is to ensure that it does interfere with another thread
 		pthread_mutex_lock(&msend_mutex);
+		printf("sending ad...\n");
 		multicast_send(zcs_node.msend, ad_msg, strlen(ad_msg)+1);
 		pthread_mutex_unlock(&msend_mutex);
 		// multicast_send(zcs_node.m_ad_send, ad_msg, strlen(ad_msg)+1);

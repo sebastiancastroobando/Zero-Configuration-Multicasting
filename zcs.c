@@ -370,8 +370,7 @@ int zcs_init(int type) {
 	// For receiving, only the source port is needed
     mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
 	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
-	mcast_t *m_ad_send = multicast_init(ZCS_CHANNEL3, ZCS_PORT1, ZCS_PORT1 + 1);
-	mcast_t *m_ad_recv = multicast_init(ZCS_CHANNEL3, ZCS_PORT1 - 1, ZCS_PORT1);
+
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {
 		perror("zcs_init: multicast_init\n");
@@ -380,16 +379,12 @@ int zcs_init(int type) {
 
 	// setup the receive multicast object
 	multicast_setup_recv(mrecv);
-	multicast_setup_recv(m_ad_recv);
 
 	// save the multicast object to the node object for
 	// notifications, heartbeats, and discovery
 	zcs_node.type = type;
     zcs_node.msend = msend;
 	zcs_node.mrecv = mrecv;
-	// save the multicast object to the node object for ads
-	zcs_node.m_ad_send = m_ad_send;
-	zcs_node.m_ad_recv = m_ad_recv;
 
 	// logging the messages it receives...
 	if (type == ZCS_APP_TYPE) {
@@ -545,7 +540,11 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
  * @return the number of nodes that match the query
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
-    sleep(1);
+	// check if there is something to query
+	if (local_reg.num_nodes == 0) {
+		// sleep for a second to allow the app to receive notifications
+		sleep(1);
+	}
 	int cnt = 0;
 	if (local_reg.num_nodes < namelen)
 		namelen = local_reg.num_nodes;

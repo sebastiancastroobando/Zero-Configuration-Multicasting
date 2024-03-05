@@ -28,4 +28,7 @@ service2_LAN2: $(SERVICE2_LAN2)
 	$(CC) $(SERVICE2_LAN2) -o $(SERVICE2_LAN2_TARGET)
 
 clean:
-	rm -f $(APP1_LAN1_TARGET) $(APP2_LAN2_TARGET) $(SERVICE1_LAN1_TARGET) $(SERVICE2_LAN2_TARGET) app1_log.txt app2_log.txt service1_log.txt service2_log.txt
+	rm -f $(APP1_LAN1_TARGET) $(APP2_LAN2_TARGET) $(SERVICE1_LAN1_TARGET) $(SERVICE2_LAN2_TARGET)
+
+clean_logs:
+	rm -f logs/app1_log.txt logs/app2_log.txt logs/service1_log.txt logs/service2_log.txt

@@ -22,4 +22,7 @@ int main() {
         rv = zcs_post_ad("cast-status", "Ready to cast on LAN2 with old chromecast");
         sleep(5);
     }
+    printf("Shutting down OLD chromecast\n");
+    rv = zcs_shutdown();
+    return rv;
 }

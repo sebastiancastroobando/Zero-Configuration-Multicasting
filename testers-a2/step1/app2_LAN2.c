@@ -26,5 +26,6 @@ int main() {
         }
         sleep(30);
     }
-
+    printf("Shutting down app2\n");
+    zcs_shutdown();
 }

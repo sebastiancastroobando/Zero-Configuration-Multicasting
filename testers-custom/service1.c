@@ -10,12 +10,13 @@ int main() {
 	    { .attr_name = "location", .value = "living room"},
 	    { .attr_name = "make", .value = "linksys"} };
     rv = zcs_start("my-router", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
+    printf("Started router\n");
     for (int i = 0; i < 1; i++) {
         printf("muting ad\n");
         rv = zcs_post_ad("mute", "on");
         sleep(5);
         printf("unmuting ad\n");
-        rv = zcs_post_ad("mute", "off");
+        rv = zcs_post_ad("GO_OFFLINE", "WE ARE OFFLINE");
         sleep(5);
     }
     rv = zcs_shutdown();

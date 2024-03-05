@@ -21,13 +21,15 @@ typedef void (*zcs_cb_f)(char *, char *);
 
 #define MAX_NAME_LEN		64      // max length of a node name
 #define MAX_AD_DURATION		10      // in seconds
-#define MAX_AD_ATTEMPTS		3       // number of attempts to send an ad
+#define MAX_AD_ATTEMPTS		5       // number of attempts to send an ad
 #define HEARTBEAT_INTERVAL	5       // in seconds
 #define BUF_SIZE			1000    // TODO : 100 seems like too little, let's talk about this.
 #define MAX_SIZE			10      // max number of nodes
 #define MAX_MSG_SIZE		20      // max number of {attr_name, value} pairs
 #define LOG_SIZE			6		// max number of log entries per node (UP/DOWN)
 
+// Verbose flag
+#define VERBOSE             1      // 1 for verbose, 0 for non-verbose
 
 int zcs_init(int type);
 int zcs_start(char *name, zcs_attribute_t attr[], int num);

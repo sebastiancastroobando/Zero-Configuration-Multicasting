@@ -314,7 +314,10 @@ void* notification(void* arg) {
 			// print the check receive value
 			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
-				printf("sending notification...\n");
+				// print if in verbose mode
+				if (VERBOSE) {
+					printf("sending notification...\n");
+				}
 				// send the notification to the multicast group
 				// lock the msend mutex to ensure that it does not interfere with another thread
 				pthread_mutex_lock(&msend_mutex);
@@ -339,8 +342,11 @@ void* heartbeat(void* arg) {
 
 	sleep(1);
     while(keep_running) {
-		// not expecting any incoming messages, just send the heartbeat
-		printf("sending heartbeat...\n");
+		// print if in verbose mode
+		if (VERBOSE) {
+			// not expecting any incoming messages, just send the heartbeat
+			printf("sending heartbeat...\n");
+		}
 		// send the heartbeat to the multicast group
 		// lock the msend mutex to ensure that it does not interfere with another thread
 		pthread_mutex_lock(&msend_mutex);
@@ -505,7 +511,10 @@ int zcs_post_ad(char *ad_name, char *ad_value) {
 		// send the ad to the multicast group, but first lock the msend mutex
 		// this is to ensure that it does interfere with another thread
 		pthread_mutex_lock(&msend_mutex);
-		printf("sending ad...\n");
+		// print if in verbose mode
+		if (VERBOSE) {
+			printf("Sending ad: %s\n", ad_msg);
+		}
 		multicast_send(zcs_node.msend, ad_msg, strlen(ad_msg)+1);
 		pthread_mutex_unlock(&msend_mutex);
 		// multicast_send(zcs_node.m_ad_send, ad_msg, strlen(ad_msg)+1);

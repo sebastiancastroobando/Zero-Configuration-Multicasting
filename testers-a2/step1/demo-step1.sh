@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Clean up previous builds and logs
+make clean
+
+# Compile the programs
+make
+
 # Run the applications in the background and redirect their output to log files
 ./app1_LAN1 > app1_log.txt 2>&1 &
 ./service1_LAN1 > service1_log.txt 2>&1 &

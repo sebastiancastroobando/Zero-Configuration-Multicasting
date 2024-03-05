@@ -2,7 +2,18 @@
 
 #include "multicast.h"
 
+mcast_t *mcast_LAN1_mrecv; // multicast Channel 1 for LAN1
+mcast_t *mcast_LAN1_msend; // multicast Channel 2 for LAN1
+mcast_t *mcast_LAN2_mrecv; // multicast Channel 1 for LAN2
+mcast_t *mcast_LAN2_msend; // multicast Channel 2 for LAN2
 
+relay_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *channel1_LAN2, char *channel2_LAN2, int port2_LAN2) {
+    // initialize the multicast groups
+    mcast_init(channel1_LAN1, port_LAN1, port_LAN1 + 1);
+    mcast_init(channel2_LAN1, port_LAN1 - 1, port_LAN1);
+    mcast_init(channel1_LAN2, port2_LAN2, port2_LAN2 + 1);
+    mcast_init(channel2_LAN2, port2_LAN2 - 1, port2_LAN2);
+}
 
 // The relay is a bridge between two LANs. 
 int main() {
@@ -33,5 +44,5 @@ int main() {
 
 
     // initialize the multicast groups
-
+    reley_init(channel1_LAN1, channel2_LAN1, port_LAN1, channel1_LAN2, channel2_LAN2, port2_LAN2);
 }

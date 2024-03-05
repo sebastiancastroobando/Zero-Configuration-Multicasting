@@ -17,8 +17,6 @@ typedef struct {
     zcs_attribute_t *attributes;
     mcast_t *msend;
 	mcast_t *mrecv;
-	mcast_t *m_ad_send;
-	mcast_t *m_ad_recv;
     int num_attributes;
 	time_t log[LOG_SIZE];
     int oldest_log_index;

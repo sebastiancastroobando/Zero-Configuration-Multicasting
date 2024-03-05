@@ -359,18 +359,20 @@ void* heartbeat(void* arg) {
 
 /**
  * @brief Setup the parameters and initializations of necesasry components
+ * @param type the type of the node (app or service)
+ * @
  * @return 0 on success, -1 on failure
 */
-int zcs_init(int type) {
+int zcs_init(int type, char *channel1, char *channel2, int port) {
     // Initialize multicast groups
 	// send_channel and recv_channel should be char* and not int
 	char *send_channel, *recv_channel;
 	if (type == ZCS_APP_TYPE) {
-		send_channel = ZCS_CHANNEL1;
-		recv_channel = ZCS_CHANNEL2;
+		send_channel = channel1;
+		recv_channel = channel2;
 	} else if (type == ZCS_SERVICE_TYPE) {
-		send_channel = ZCS_CHANNEL2;
-		recv_channel = ZCS_CHANNEL1;
+		send_channel = channel2;
+		recv_channel = channel1;
 	}
 	// specify that there are no nodes in local registry
 	local_reg.num_nodes = 0;
@@ -378,8 +380,8 @@ int zcs_init(int type) {
 	// create the multicast objects, one for sending and one for receiving
 	// For sending, only the destination port is needed
 	// For receiving, only the source port is needed
-    mcast_t *msend = multicast_init(send_channel, ZCS_PORT, ZCS_PORT + 1);
-	mcast_t *mrecv = multicast_init(recv_channel, ZCS_PORT - 1, ZCS_PORT);
+    mcast_t *msend = multicast_init(send_channel, port, port + 1);
+	mcast_t *mrecv = multicast_init(recv_channel, port - 1, port);
 
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {

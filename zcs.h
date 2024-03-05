@@ -15,8 +15,8 @@ typedef void (*zcs_cb_f)(char *, char *);
 // We need to know the port number of the ZCS multicast group
 #define ZCS_PORT			14500
 #define ZCS_PORT1			17500
-#define ZCS_CHANNEL1		"224.1.1.1"
-#define ZCS_CHANNEL2		"224.1.1.2"
+// #define ZCS_CHANNEL1		"224.1.1.1"
+// #define ZCS_CHANNEL2		"224.1.1.2"
 
 #define MAX_NAME_LEN		64      // max length of a node name
 #define MAX_AD_DURATION		10      // in seconds
@@ -30,7 +30,7 @@ typedef void (*zcs_cb_f)(char *, char *);
 // Verbose flag
 #define VERBOSE             1      // 1 for verbose, 0 for non-verbose
 
-int zcs_init(int type);
+int zcs_init(int type, char *channel1, char *channel2, int port);
 int zcs_start(char *name, zcs_attribute_t attr[], int num);
 int zcs_post_ad(char *ad_name, char *ad_value);
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen);

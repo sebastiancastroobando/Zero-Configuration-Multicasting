@@ -219,10 +219,9 @@ void* init_app(void* arg) {
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
-				// with the relay library, it is possible to receive a message with the following ending:
+				// Relayed messages have the following ending:
 				// "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3...;relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1;"
-				// For now, we won't tokenize the relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1; part
-				// We will just ignore it
+				// For now, we won't tokenize the relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1; part. We will just ignore it.
 				if (strstr(token, "relayed:true") != NULL) {
 					break; // skip the rest of the tokens
 				}
@@ -343,7 +342,6 @@ void* heartbeat(void* arg) {
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
-	strcat(heartbeat_msg, "\0");
 
 	sleep(1);
     while(keep_running) {
@@ -564,7 +562,7 @@ int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen
 	// check if there is something to query
 	if (local_reg.num_nodes == 0) {
 		// sleep for a second to allow the app to receive notifications
-		sleep(1);
+		sleep(2);
 	}
 	int cnt = 0;
 	if (local_reg.num_nodes < namelen)

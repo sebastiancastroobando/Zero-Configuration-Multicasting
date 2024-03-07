@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "multicast.h"
 
@@ -133,4 +134,22 @@ int main() {
 
     // initialize the multicast groups
     reley_init(channel1_LAN1, channel2_LAN1, port_LAN1, channel1_LAN2, channel2_LAN2, port2_LAN2);
+
+    // wait for the threads to finish
+    pthread_join(*LAN1_CHANNEL1_thread, NULL);
+    pthread_join(*LAN1_CHANNEL2_thread, NULL);
+    pthread_join(*LAN2_CHANNEL1_thread, NULL);
+    pthread_join(*LAN2_CHANNEL2_thread, NULL);
+
+    // free the memory allocated for the threads
+    free(LAN1_CHANNEL1_thread);
+    free(LAN1_CHANNEL2_thread);
+    free(LAN2_CHANNEL1_thread);
+    free(LAN2_CHANNEL2_thread);
+
+    // destroy the multicast groups
+    multicast_destroy(mcast_LAN1_CHANNEL1_mrecv);
+    multicast_destroy(mcast_LAN1_CHANNEL1_msend);
+    multicast_destroy(mcast_LAN1_CHANNEL2_mrecv);
+    multicast_destroy(mcast_LAN1_CHANNEL2_msend);
 }

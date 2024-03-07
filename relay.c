@@ -84,6 +84,12 @@ void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *c
     multicast_setup_recv(mcast_LAN2_CHANNEL1_mrecv);
     multicast_setup_recv(mcast_LAN2_CHANNEL2_mrecv);
 
+    // create the threads for the relay
+    LAN1_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    LAN1_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    LAN2_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    LAN2_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
+
     // start the relay threads
     pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, mcast_LAN1_CHANNEL1_mrecv);
     pthread_create(LAN1_CHANNEL2_thread, NULL, relay_thread, mcast_LAN1_CHANNEL2_mrecv);
@@ -121,6 +127,9 @@ int main() {
     printf("Enter port: ");
     scanf("%d", &port2_LAN2);
 
+    // teting the collected data
+    printf("LAN1: %s, %s, %d\n", channel1_LAN1, channel2_LAN1, port_LAN1);
+    printf("LAN2: %s, %s, %d\n", channel1_LAN2, channel2_LAN2, port2_LAN2);
 
     // initialize the multicast groups
     reley_init(channel1_LAN1, channel2_LAN1, port_LAN1, channel1_LAN2, channel2_LAN2, port2_LAN2);

@@ -19,8 +19,8 @@ typedef void (*zcs_cb_f)(char *, char *);
 // #define ZCS_CHANNEL2		"224.1.1.2"
 
 #define MAX_NAME_LEN		64      // max length of a node name
-#define MAX_AD_DURATION		10      // in seconds
-#define MAX_AD_ATTEMPTS		5       // number of attempts to send an ad
+#define MAX_AD_DURATION		2      // in seconds
+#define MAX_AD_ATTEMPTS		1       // number of attempts to send an ad
 #define HEARTBEAT_INTERVAL	5       // in seconds
 #define BUF_SIZE			1000    // TODO : 100 seems like too little, let's talk about this.
 #define MAX_SIZE			10      // max number of nodes

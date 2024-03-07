@@ -26,6 +26,19 @@ pthread_t *LAN1_CHANNEL2_thread;
 pthread_t *LAN2_CHANNEL1_thread;
 pthread_t *LAN2_CHANNEL2_thread;
 
+// define struct to hold mrecv, msend, and general info
+typedef struct {
+    mcast_t *mrecv;
+    mcast_t *msend;
+    char *channel_source;
+    char *channel_destination;
+} relay_info_t;
+
+relay_info_t *relay_info_LAN1_CHANNEL1;
+relay_info_t *relay_info_LAN1_CHANNEL2;
+relay_info_t *relay_info_LAN2_CHANNEL1;
+relay_info_t *relay_info_LAN2_CHANNEL2;
+
 /**
  * @brief function to be executed by the thread that relays multicast messages between LAN1 and LAN2
  * @param mrecv multicast receiver object from first LAN
@@ -38,6 +51,7 @@ void *relay_thread(void *arg) {
     // get the multicast receiver and sender objects
     mcast_t *mrecv = (mcast_t *)arg;
     mcast_t *msend = (mcast_t *)arg;
+    // also name of 
 
     char received_data[MAX_MSG_SIZE];
 
@@ -57,6 +71,17 @@ void *relay_thread(void *arg) {
             printf("Relaying message: %s\n", received_data);
         }
     }
+}
+
+/**
+ * @brief Create struct to hold the multicast receiver and sender objects
+*/
+void create_relay_info(mcast_t *mrecv, mcast_t *msend, char *channel_source, char *channel_destination) {
+    relay_info_t *relay_info = (relay_info_t *)malloc(sizeof(relay_info_t));
+    relay_info->mrecv = mrecv;
+    relay_info->msend = msend;
+    relay_info->channel_source = channel_source;
+    relay_info->channel_destination = channel_destination;
 }
 
 /**
@@ -95,6 +120,12 @@ void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *c
     LAN2_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
     LAN2_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
 
+    // create the relay info structs
+    create_relay_info(mcast_LAN1_CHANNEL1_mrecv, mcast_LAN2_CHANNEL1_msend, "LAN1_CHANNEL1", "LAN2_CHANNEL1");
+    create_relay_info(mcast_LAN1_CHANNEL2_mrecv, mcast_LAN2_CHANNEL2_msend, "LAN1_CHANNEL2", "LAN2_CHANNEL2");
+    create_relay_info(mcast_LAN2_CHANNEL1_mrecv, mcast_LAN1_CHANNEL1_msend, "LAN2_CHANNEL1", "LAN1_CHANNEL1");
+    create_relay_info(mcast_LAN2_CHANNEL2_mrecv, mcast_LAN1_CHANNEL2_msend, "LAN2_CHANNEL2", "LAN1_CHANNEL2");
+
     // start the relay threads
     pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, mcast_LAN1_CHANNEL1_mrecv);
     pthread_create(LAN1_CHANNEL2_thread, NULL, relay_thread, mcast_LAN1_CHANNEL2_mrecv);
@@ -123,6 +154,12 @@ void shutdown_relay() {
     free(LAN2_CHANNEL1_thread);
     free(LAN2_CHANNEL2_thread);
 
+    // free the memory allocated for the relay info structs
+    free(relay_info_LAN1_CHANNEL1);
+    free(relay_info_LAN1_CHANNEL2);
+    free(relay_info_LAN2_CHANNEL1);
+    free(relay_info_LAN2_CHANNEL2);
+
     // destroy the multicast groups
     multicast_destroy(mcast_LAN1_CHANNEL1_mrecv);
     multicast_destroy(mcast_LAN1_CHANNEL1_msend);
@@ -135,5 +172,10 @@ void shutdown_relay() {
  * @todo should this be implemented like a library instead of a main function?
 */
 int main() {
+    // initialize the multicast groups for LAN1 and LAN2
+    reley_init("224.1.1.1", "224.1.1.2", 14500, "224.1.1.3", "224.1.1.4", 14500);
+    sleep(30); // sleep for 30 seconds
+    shutdown_relay(); // shutdown the relay
+
     return 0;
 }

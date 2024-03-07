@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include <thread.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "multicast.h"
 
@@ -32,12 +34,12 @@ void *relay_thread(void *arg) {
     mcast_t *mrecv = (mcast_t *)arg;
     mcast_t *msend = (mcast_t *)arg;
 
-    char received_data[MAX_MSG_SIZE]
+    char received_data[MAX_MSG_SIZE];
 
     // receive the multicast message
     while(1) {
         if (multicast_check_receive(mrecv) > 0) {
-            multicast_receive(mrecv, received_data); // receive the multicast message
+            multicast_receive(mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
 
             // check if the received message is already relayed
             if (strstr(received_data, "relayed:true") != NULL) {
@@ -65,22 +67,22 @@ void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *c
     */
     
     // initialize the multicast groups for LAN1
-    mcast_LAN1_CHANNEL1_mrecv = mcast_init(channel1_LAN1, port_LAN1-1, port_LAN1);
-    mcast_LAN1_CHANNEL1_msend = mcast_init(channel1_LAN1, port_LAN1, port_LAN1+1);
-    mcast_LAN1_CHANNEL2_mrecv = mcast_init(channel2_LAN1, port_LAN1-1, port_LAN1);
-    mcast_LAN1_CHANNEL2_msend = mcast_init(channel2_LAN1, port_LAN1, port_LAN1+1);
+    mcast_LAN1_CHANNEL1_mrecv = multicast_init(channel1_LAN1, port_LAN1-1, port_LAN1);
+    mcast_LAN1_CHANNEL1_msend = multicast_init(channel1_LAN1, port_LAN1, port_LAN1+1);
+    mcast_LAN1_CHANNEL2_mrecv = multicast_init(channel2_LAN1, port_LAN1-1, port_LAN1);
+    mcast_LAN1_CHANNEL2_msend = multicast_init(channel2_LAN1, port_LAN1, port_LAN1+1);
 
     // initialize the multicast groups for LAN2
-    mcast_LAN2_CHANNEL1_mrecv = mcast_init(channel1_LAN2, port2_LAN2-1, port2_LAN2);
-    mcast_LAN2_CHANNEL1_msend = mcast_init(channel1_LAN2, port2_LAN2, port2_LAN2+1);
-    mcast_LAN2_CHANNEL2_mrecv = mcast_init(channel2_LAN2, port2_LAN2-1, port2_LAN2);
-    mcast_LAN2_CHANNEL2_msend = mcast_init(channel2_LAN2, port2_LAN2, port2_LAN2+1);
+    mcast_LAN2_CHANNEL1_mrecv = multicast_init(channel1_LAN2, port2_LAN2-1, port2_LAN2);
+    mcast_LAN2_CHANNEL1_msend = multicast_init(channel1_LAN2, port2_LAN2, port2_LAN2+1);
+    mcast_LAN2_CHANNEL2_mrecv = multicast_init(channel2_LAN2, port2_LAN2-1, port2_LAN2);
+    mcast_LAN2_CHANNEL2_msend = multicast_init(channel2_LAN2, port2_LAN2, port2_LAN2+1);
 
     // setup receiver multicast objects
-    mcast_setup_recv(mcast_LAN1_CHANNEL1_mrecv);
-    mcast_setup_recv(mcast_LAN1_CHANNEL2_mrecv);
-    mcast_setup_recv(mcast_LAN2_CHANNEL1_mrecv);
-    mcast_setup_recv(mcast_LAN2_CHANNEL2_mrecv);
+    multicast_setup_recv(mcast_LAN1_CHANNEL1_mrecv);
+    multicast_setup_recv(mcast_LAN1_CHANNEL2_mrecv);
+    multicast_setup_recv(mcast_LAN2_CHANNEL1_mrecv);
+    multicast_setup_recv(mcast_LAN2_CHANNEL2_mrecv);
 
     // start the relay threads
     pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, mcast_LAN1_CHANNEL1_mrecv);

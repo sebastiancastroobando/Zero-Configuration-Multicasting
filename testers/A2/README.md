@@ -26,10 +26,10 @@ On LAN-A, we created the following apps and services:
 - `LAN-A_service2` : A Xbox Cloud Gaming service on LAN-A
 
 On LAN-B, we created the following apps and services:
-- `LAN-B_app1` : 
-- `LAN-B_app2` : 
-- `LAN-B_service1` : 
-- `LAN-B_service2` : 
+- `LAN-B_app1` : App on LAN-B which wants to interact with a Smart light bulb service
+- `LAN-B_app2` : App on LAN-B which wants to interact with a Smart ninja blender service
+- `LAN-B_service1` : A Smart light bulb service on LAN-B
+- `LAN-B_service2` : A Smart ninja blender service on LAN-B
 
 To show that the LANs are isolated, we created the script `demo-part1.sh` which runs all the listed apps and services. From the description above, we expect the following:
 - 

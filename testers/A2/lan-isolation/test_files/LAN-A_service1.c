@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
-#include "../../zcs.h"
+#include "../../../../zcs.h"
 
 #define CHANNEL1            "224.1.1.1"
 #define CHANNEL2            "224.1.1.2"
@@ -16,11 +16,11 @@ int main() {
         { .attr_name = "model", .value = "X3K23FADJ23"},
         { .attr_name = "year", .value = "2023"}
     };
-    rv = zcs_start("new_chromecast", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    printf("Started chromecast\n");
-    for (int i = 0; i < 5; i++) {
+    rv = zcs_start("chromecast", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
+    printf("New Chromecast started!\n");
+    for (int i = 0; i < 10; i++) {
         rv = zcs_post_ad("cast-status", "Ready to cast on LAN1 with new chromecast");
-        sleep(5);
+        sleep(1);
     }
     printf("Shutting down NEW chromecast\n");
     rv = zcs_shutdown();

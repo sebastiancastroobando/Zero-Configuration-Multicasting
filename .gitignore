@@ -7,9 +7,5 @@ service0
 service1
 service2
 app
-testers-a2/app1_LAN1
-testers-a2/app2_LAN2
-testers-a2/service1_LAN1
-testers-a2/service2_LAN2
-testers-a2/logs/*
+./testers/A2/logs/*
 relay

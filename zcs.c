@@ -266,7 +266,7 @@ void* init_app(void* arg) {
 				// the message is an ad, we need to check if nodeName matches the name we are listening to
 				// if not, ignore the message
 				split_key_value(received_data[1], &key, &value); // key = nodeName, value = node_name
-				if (memcmp(ad_args->name, value, sizeof(value) + sizeof(char)) == 0) {
+				if (strcmp(ad_args->name, value) == 0) {
 					split_key_value(received_data[2], &key, &value); // key = adName, value = ad_name
 					// get adName
 					char *adName = value;
@@ -342,6 +342,7 @@ void* heartbeat(void* arg) {
 	strcpy(heartbeat_msg, "msgType:HEARTBEAT;nodeName:");
 	strcat(heartbeat_msg, zcs_node.name);
 	strcat(heartbeat_msg, ";");
+	strcat(heartbeat_msg, "\0");
 
 	sleep(1);
     while(keep_running) {

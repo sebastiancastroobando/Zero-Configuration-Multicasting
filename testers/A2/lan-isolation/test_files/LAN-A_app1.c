@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../zcs.h"
+#include "../../../../zcs.h"
 
 #define CHANNEL1            "224.1.1.1"
 #define CHANNEL2            "224.1.1.2"
@@ -12,6 +12,7 @@ void ad_callback(char *s, char *r) {
 
 int main() {
     int rv;
+    printf("Starting app1 in LAN-A\n");
     rv = zcs_init(ZCS_APP_TYPE, CHANNEL1, CHANNEL2, 14500);
     char *names[10];
     rv = zcs_query("type", "chromecast", names, 10);
@@ -26,7 +27,7 @@ int main() {
         }
         sleep(30);
     }
-    printf("Shutting down app1\n");
+    printf("Shutting down app1 in LAN-A\n");
     zcs_shutdown();
 
 }

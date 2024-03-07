@@ -8,6 +8,9 @@
 
 #define MAX_MSG_SIZE 1000 // maximum size of the multicast message to be relayed
 
+// keep running the relay
+static int keep_running = 1;
+
 mcast_t *mcast_LAN1_CHANNEL1_mrecv; // multicast receiver Channel 1 for LAN1
 mcast_t *mcast_LAN1_CHANNEL1_msend; // multicast sender Channel 1 for LAN1
 mcast_t *mcast_LAN1_CHANNEL2_mrecv; // multicast receiver Channel 2 for LAN1
@@ -27,6 +30,7 @@ pthread_t *LAN2_CHANNEL2_thread;
  * @brief function to be executed by the thread that relays multicast messages between LAN1 and LAN2
  * @param mrecv multicast receiver object from first LAN
  * @param msend multicast sender object from second LAN
+ * @todo should we add some formatting? Like : {sourceLAN:LAN1; sourceChannel:channel1; destinationLAN:LAN2; destinationChannel:channel1}
 */
 void *relay_thread(void *arg) {
     // The relay thread will take one receiver from a channel and send it to the other channel with a sender.
@@ -38,7 +42,7 @@ void *relay_thread(void *arg) {
     char received_data[MAX_MSG_SIZE];
 
     // receive the multicast message
-    while(1) {
+    while(keep_running) {
         if (multicast_check_receive(mrecv) > 0) {
             multicast_receive(mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
 
@@ -98,42 +102,14 @@ void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *c
     pthread_create(LAN2_CHANNEL2_thread, NULL, relay_thread, mcast_LAN2_CHANNEL2_mrecv);
 }
 
+
+
 /**
- * @brief Relay the multicast messages between LAN1 and LAN2
- * @todo should this be implemented like a library instead of a main function?
+ * @brief Shutdown the relay
 */
-int main() {
-    // ask user for channel1, channel2, and port
-    char channel1_LAN1[16];
-    char channel2_LAN1[16];
-    int port_LAN1;
-
-    char channel1_LAN2[16];
-    char channel2_LAN2[16];
-    int port2_LAN2;
-
-    printf("Relay Configuration\n");
-    printf("LAN1 -------------------\n");
-    printf("Enter channel1: ");
-    scanf("%s", channel1_LAN1);
-    printf("Enter channel2: ");
-    scanf("%s", channel2_LAN1);
-    printf("Enter port: ");
-    scanf("%d", &port_LAN1);
-    printf("LAN2 -------------------\n");
-    printf("Enter channel1: ");
-    scanf("%s", channel1_LAN2);
-    printf("Enter channel2: ");
-    scanf("%s", channel2_LAN2);
-    printf("Enter port: ");
-    scanf("%d", &port2_LAN2);
-
-    // teting the collected data
-    printf("LAN1: %s, %s, %d\n", channel1_LAN1, channel2_LAN1, port_LAN1);
-    printf("LAN2: %s, %s, %d\n", channel1_LAN2, channel2_LAN2, port2_LAN2);
-
-    // initialize the multicast groups
-    reley_init(channel1_LAN1, channel2_LAN1, port_LAN1, channel1_LAN2, channel2_LAN2, port2_LAN2);
+void shutdown_relay() {
+    // stop the relay
+    keep_running = 0;
 
     // wait for the threads to finish
     pthread_join(*LAN1_CHANNEL1_thread, NULL);
@@ -152,4 +128,12 @@ int main() {
     multicast_destroy(mcast_LAN1_CHANNEL1_msend);
     multicast_destroy(mcast_LAN1_CHANNEL2_mrecv);
     multicast_destroy(mcast_LAN1_CHANNEL2_msend);
+}
+
+/**
+ * @brief Relay the multicast messages between LAN1 and LAN2
+ * @todo should this be implemented like a library instead of a main function?
+*/
+int main() {
+    return 0;
 }

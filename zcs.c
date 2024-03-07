@@ -219,6 +219,13 @@ void* init_app(void* arg) {
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
+				// with the relay library, it is possible to receive a message with the following ending:
+				// "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3...;relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1;"
+				// For now, we won't tokenize the relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1; part
+				// We will just ignore it
+				if (strstr(token, "relayed:true") != NULL) {
+					break; // skip the rest of the tokens
+				}
 				received_data[dsize] = (char*) malloc((strlen(token) + 1) * sizeof(char));
 				strcpy(received_data[dsize++], token);
 				token = strtok(NULL, ";");

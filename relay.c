@@ -6,7 +6,8 @@
 
 #include "multicast.h"
 
-#define MAX_MSG_SIZE 1000 // maximum size of the multicast message to be relayed
+#define MAX_MSG_SIZE 1000       // maximum size of the multicast message to be relayed
+#define VERBOSE 1               // 1 for verbose, 0 for non-verbose
 
 // keep running the relay
 static int keep_running = 1;
@@ -43,32 +44,45 @@ relay_info_t *relay_info_LAN2_CHANNEL2;
  * @brief function to be executed by the thread that relays multicast messages between LAN1 and LAN2
  * @param mrecv multicast receiver object from first LAN
  * @param msend multicast sender object from second LAN
- * @todo should we add some formatting? Like : {sourceLAN:LAN1; sourceChannel:channel1; destinationLAN:LAN2; destinationChannel:channel1}
 */
 void *relay_thread(void *arg) {
     // The relay thread will take one receiver from a channel and send it to the other channel with a sender.
-    
-    // get the multicast receiver and sender objects
-    mcast_t *mrecv = (mcast_t *)arg;
-    mcast_t *msend = (mcast_t *)arg;
-    // also name of 
+    // get the relay info
+    relay_info_t *relay_info = (relay_info_t *)arg;
 
     char received_data[MAX_MSG_SIZE];
 
     // receive the multicast message
     while(keep_running) {
-        if (multicast_check_receive(mrecv) > 0) {
-            multicast_receive(mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
+        if (multicast_check_receive(relay_info->mrecv) > 0) {
+            multicast_receive(relay_info->mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
 
             // check if the received message is already relayed
             if (strstr(received_data, "relayed:true") != NULL) {
                 continue; // if the message is already relayed, then skip it
             }
 
-            // Concatenate "relayed:true" to the received message
-            strcat(received_data, "relayed:true");
+            // First create the message to be concatenated with the received message
+            // ...;relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1;
+            char *transmission = (char *)malloc(sizeof(char) * 100);
+            strcpy(transmission, "relayed:true;transmission:");
+            strcat(transmission, relay_info->channel_source);
+            strcat(transmission, "->");
+            strcat(transmission, relay_info->channel_destination);
+            strcat(transmission, ";");
 
-            printf("Relaying message: %s\n", received_data);
+            // concatenate the received message with the transmission message
+            // @todo: check if the received message is too large? 
+            strcat(received_data, transmission);
+            if (VERBOSE) {
+                printf("RELAYING\t%s\n", received_data);
+            }
+            
+            // send the multicast message, +1 to include the null terminator
+            multicast_send(relay_info->msend, received_data, strlen(received_data)+1);
+
+            // free the memory allocated for the transmission message
+            free(transmission);
         }
     }
 }
@@ -76,12 +90,12 @@ void *relay_thread(void *arg) {
 /**
  * @brief Create struct to hold the multicast receiver and sender objects
 */
-void create_relay_info(mcast_t *mrecv, mcast_t *msend, char *channel_source, char *channel_destination) {
-    relay_info_t *relay_info = (relay_info_t *)malloc(sizeof(relay_info_t));
-    relay_info->mrecv = mrecv;
-    relay_info->msend = msend;
-    relay_info->channel_source = channel_source;
-    relay_info->channel_destination = channel_destination;
+void create_relay_info(relay_info_t **relay_info, mcast_t *mrecv, mcast_t *msend, char *channel_source, char *channel_destination) {
+    *relay_info = (relay_info_t *)malloc(sizeof(relay_info_t));
+    (*relay_info)->mrecv = mrecv;
+    (*relay_info)->msend = msend;
+    (*relay_info)->channel_source = channel_source;
+    (*relay_info)->channel_destination = channel_destination;
 }
 
 /**
@@ -120,20 +134,18 @@ void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *c
     LAN2_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
     LAN2_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
 
-    // create the relay info structs
-    create_relay_info(mcast_LAN1_CHANNEL1_mrecv, mcast_LAN2_CHANNEL1_msend, "LAN1_CHANNEL1", "LAN2_CHANNEL1");
-    create_relay_info(mcast_LAN1_CHANNEL2_mrecv, mcast_LAN2_CHANNEL2_msend, "LAN1_CHANNEL2", "LAN2_CHANNEL2");
-    create_relay_info(mcast_LAN2_CHANNEL1_mrecv, mcast_LAN1_CHANNEL1_msend, "LAN2_CHANNEL1", "LAN1_CHANNEL1");
-    create_relay_info(mcast_LAN2_CHANNEL2_mrecv, mcast_LAN1_CHANNEL2_msend, "LAN2_CHANNEL2", "LAN1_CHANNEL2");
-
+    // create the relay info structs and assign them to the global variables
+    create_relay_info(&relay_info_LAN1_CHANNEL1, mcast_LAN1_CHANNEL1_mrecv, mcast_LAN2_CHANNEL1_msend, channel1_LAN1, channel1_LAN2);
+    create_relay_info(&relay_info_LAN1_CHANNEL2, mcast_LAN1_CHANNEL2_mrecv, mcast_LAN2_CHANNEL2_msend, channel2_LAN1, channel2_LAN2);
+    create_relay_info(&relay_info_LAN2_CHANNEL1, mcast_LAN2_CHANNEL1_mrecv, mcast_LAN1_CHANNEL1_msend, channel1_LAN2, channel1_LAN1);
+    create_relay_info(&relay_info_LAN2_CHANNEL2, mcast_LAN2_CHANNEL2_mrecv, mcast_LAN1_CHANNEL2_msend, channel2_LAN2, channel2_LAN1);
+    
     // start the relay threads
-    pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, mcast_LAN1_CHANNEL1_mrecv);
-    pthread_create(LAN1_CHANNEL2_thread, NULL, relay_thread, mcast_LAN1_CHANNEL2_mrecv);
-    pthread_create(LAN2_CHANNEL1_thread, NULL, relay_thread, mcast_LAN2_CHANNEL1_mrecv);
-    pthread_create(LAN2_CHANNEL2_thread, NULL, relay_thread, mcast_LAN2_CHANNEL2_mrecv);
+    pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, (void *)relay_info_LAN1_CHANNEL1);
+    pthread_create(LAN1_CHANNEL2_thread, NULL, relay_thread, (void *)relay_info_LAN1_CHANNEL2);
+    pthread_create(LAN2_CHANNEL1_thread, NULL, relay_thread, (void *)relay_info_LAN2_CHANNEL1);
+    pthread_create(LAN2_CHANNEL2_thread, NULL, relay_thread, (void *)relay_info_LAN2_CHANNEL2);
 }
-
-
 
 /**
  * @brief Shutdown the relay

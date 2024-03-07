@@ -114,8 +114,9 @@ void add_log(zcs_node_t *node) {
 */
 int find_node(char *name) {
 	for (int i = 0; i < local_reg.num_nodes; i++) {
-		if (memcmp(local_reg.nodes[i]->name, name, sizeof(name) + sizeof(char)) == 0)
+		if (strcmp(local_reg.nodes[i]->name, name) == 0) {
 			return i;
+		}
 	}
 	return -1;
 }
@@ -247,6 +248,10 @@ void* init_app(void* arg) {
 					continue;
 				}
 				free(copy);
+				// print if in verbose mode
+				if (VERBOSE) {
+					printf("Received notification and adding to local registry: %s\n", received_data[1]);
+				}
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
 			} 
@@ -257,6 +262,10 @@ void* init_app(void* arg) {
 				// check if the node is in the local registry
 				int index = find_node(value);
 				if (index != -1) {
+					// if verbose mode is on, print the heartbeat
+					if (VERBOSE) {
+						printf("Received heartbeat for service in local registry: %s\n", value);
+					}
 					// the node is in the local registry, update the log
 					add_log(local_reg.nodes[index]);
 				}

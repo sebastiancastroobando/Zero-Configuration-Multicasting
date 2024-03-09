@@ -3,6 +3,11 @@
 # Compile the programs
 make
 
+# create logs dir if DNE
+if [ ! -d "logs" ]; then
+    mkdir logs
+fi
+
 # Run the applications in the background and redirect their output to log files
 ./LAN-A_service1 > logs/LAN-A_service1_log.txt 2>&1 &
 ./LAN-A_service2 > logs/LAN-A_service2_log.txt 2>&1 &

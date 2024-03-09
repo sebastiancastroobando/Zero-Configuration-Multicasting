@@ -270,7 +270,7 @@ void* init_app(void* arg) {
 					add_log(local_reg.nodes[index]);
 				}
 			}
-			else if (strcmp(received_data[0], "msgType:AD") == 0 && listenToAd == 1) {
+			else if (listenToAd == 1 && strcmp(received_data[0], "msgType:AD") == 0) {
 				// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 				// the message is an ad, we need to check if nodeName matches the name we are listening to
 				// if not, ignore the message

@@ -3,17 +3,14 @@
 #include <string.h>
 #include "../../../../zcs.h"
 
-#define CHANNEL1            "224.1.1.1"
-#define CHANNEL2            "224.1.1.2"
-
 void ad_callback(char *s, char *r) {
-    printf("Received ad in LAN1! Ad received: %s, with value: %s\n", s, r);
+    printf("Received ad in LAN-A! Ad received: %s, with value: %s\n", s, r);
 }
 
 int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");
-    rv = zcs_init(ZCS_APP_TYPE, CHANNEL1, CHANNEL2, 14500);
+    rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
     char *names[10];
     rv = zcs_query("type", "chromecast", names, 10);
 
@@ -22,7 +19,7 @@ int main() {
         int anum = 5;
         rv = zcs_get_attribs(names[0], attrs, &anum);
         if ((strcmp(attrs[1].attr_name, "location") == 0) && (strcmp(attrs[1].value, "living room") == 0)) {
-            printf("Listening for ads in LAN1...\n");
+            printf("Listening for ads from [%s] in LAN-A...\n", names[0]);
             rv = zcs_listen_ad(names[0], ad_callback);
         }
         sleep(30);

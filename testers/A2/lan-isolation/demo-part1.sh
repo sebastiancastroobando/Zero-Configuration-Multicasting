@@ -21,5 +21,7 @@ fi
 # Wait for all background jobs to finish
 wait
 
+./count_occurances.sh
+
 # Remove the executables
 make clean

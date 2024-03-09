@@ -21,6 +21,16 @@ typedef void (*zcs_cb_f)(char *, char *);
 #define MAX_MSG_SIZE		20      // max number of {attr_name, value} pairs
 #define LOG_SIZE			6		// max number of log entries per node (UP/DOWN)
 
+
+// LAN_A support
+#define LAN_A_CHANNEL1      "224.1.1.1"
+#define LAN_A_CHANNEL2      "224.1.1.2"
+#define LAN_A_PORT          14500
+// LAN_B support
+#define LAN_B_CHANNEL1      "224.1.1.3"
+#define LAN_B_CHANNEL2      "224.1.1.4"
+#define LAN_B_PORT          17500
+
 // Verbose flag
 #define VERBOSE             1      // 1 for verbose, 0 for non-verbose
 

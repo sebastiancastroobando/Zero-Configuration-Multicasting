@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include "../../../../zcs.h"
 
-#define CHANNEL1            "224.1.1.1"
-#define CHANNEL2            "224.1.1.2"
-
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, CHANNEL1, CHANNEL2, 14500);
+    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "chromecast"},
@@ -17,12 +14,12 @@ int main() {
         { .attr_name = "year", .value = "2023"}
     };
     rv = zcs_start("chromecast", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    printf("New Chromecast started!\n");
+    printf("Starting chromecast - service1 in LAN-A\n");
     for (int i = 0; i < 10; i++) {
-        rv = zcs_post_ad("cast-status", "Ready to cast on LAN1 with new chromecast");
+        rv = zcs_post_ad("cast-status", "Ready to cast on LAN-A with new chromecast");
         sleep(1);
     }
-    printf("Shutting down chromecast\n");
+    printf("Shutting down chromecast - service1 in LAN-A\n");
     rv = zcs_shutdown();
     return rv;
 }

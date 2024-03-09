@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include "../../../../zcs.h"
 
-#define CHANNEL1            "224.1.1.3"
-#define CHANNEL2            "224.1.1.4"
-
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, CHANNEL1, CHANNEL2, 17500);
+    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "smart-light-bulb"},
@@ -17,12 +14,12 @@ int main() {
         { .attr_name = "year", .value = "2020"}
     };
     rv = zcs_start("SmartLightBulb", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    printf("Started Smart Light Buld\n");
+    printf("Starting SmartLightBulb - service1 in LAN-B\n");
     for (int i = 0; i < 5; i++) {
-        rv = zcs_post_ad("light-color", "Light ready to change, in basement with Smart Light Bulb!");
+        rv = zcs_post_ad("light-color", "Light ready to change, in basement with Smart Light Bulb! - in LAN-B");
         sleep(5);
     }
-    printf("Shutting down Smart Light Buld\n");
+    printf("Shutting down SmartLightBulb - service1 in LAN-B\n");
     rv = zcs_shutdown();
     return rv;
 }

@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include "../../../../zcs.h"
 
-#define CHANNEL1            "224.1.1.3"
-#define CHANNEL2            "224.1.1.4"
-
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, CHANNEL1, CHANNEL2, 17500);
+    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "smart-blender"},
@@ -16,12 +13,12 @@ int main() {
         { .attr_name = "model", .value = "blender-1000"}
     };
     rv = zcs_start("ninja-blender", attribs, sizeof(attribs)/sizeof(zcs_attribute_t));
-    printf("Started the ninja blender\n");
+    printf("Starting the ninja-blender - service2 in LAN-B\n");
     for (int i = 0; i < 5; i++) {
-        rv = zcs_post_ad("blend status", "Ready to make delicious smoothies!");
+        rv = zcs_post_ad("blend status", "Ready to make delicious smoothies! - LAN-B");
         sleep(3);
     }
-    printf("Shutting down ninja blender\n");
+    printf("Shutting down ninja-blender - service2 in LAN-B\n");
     rv = zcs_shutdown();
     return rv;
 }

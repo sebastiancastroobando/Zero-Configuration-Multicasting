@@ -7,7 +7,7 @@
 
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, CHANNEL1, CHANNEL2, 14500);
+    rv = zcs_init(ZCS_SERVICE_TYPE, CHANNEL1, CHANNEL2, 17500);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "smart-light-bulb"},

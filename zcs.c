@@ -555,6 +555,7 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 		ad_args->cback = cback;
 		// set the listenToAd flag to 1, this will allow the app to listen for ads
 		listenToAd = 1;
+		ret = 1;
 	} else {
 		perror("zcs_listen_ad: node is not an app\n");
 	}

@@ -231,7 +231,7 @@ void* init_app(void* arg) {
 				token = strtok(NULL, ";");
 			}
 
-			if (memcmp(received_data[0], "msgType:NOTIFICATION", sizeof("msgType:NOTIFICATION") + sizeof(char)) == 0) {
+			if (strcmp(received_data[0], "msgType:NOTIFICATION") == 0) {
 				// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3..."
 				// if we receive a notification, check if we have already received it
 				char *copy = (char*) malloc(strlen(received_data[1]) + 1);
@@ -255,7 +255,7 @@ void* init_app(void* arg) {
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
 			} 
-			else if (memcmp(received_data[0], "msgType:HEARTBEAT", sizeof("msgType:HEARTBEAT") + sizeof(char)) == 0) {
+			else if (strcmp(received_data[0], "msgType:HEARTBEAT") == 0) {
 				// FORMAT: "msgType:HEARTBEAT;nodeName:node_name"
 				// the message is a heartbeat, we need to parse it
 				split_key_value(received_data[1], &key, &value);
@@ -270,7 +270,7 @@ void* init_app(void* arg) {
 					add_log(local_reg.nodes[index]);
 				}
 			}
-			else if (memcmp(received_data[0], "msgType:AD", sizeof("msgType:AD") + sizeof(char)) == 0 && listenToAd == 1) {
+			else if (strcmp(received_data[0], "msgType:AD") == 0 && listenToAd == 1) {
 				// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 				// the message is an ad, we need to check if nodeName matches the name we are listening to
 				// if not, ignore the message

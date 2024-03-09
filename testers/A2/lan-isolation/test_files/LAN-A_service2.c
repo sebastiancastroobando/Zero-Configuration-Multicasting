@@ -20,7 +20,7 @@ int main() {
         rv = zcs_post_ad("cast-status", "Xbox cloud gaming ready on LAN1 with xbox");
         sleep(5);
     }
-    printf("Shutting down NEW chromecast\n");
+    printf("Shutting down xbox-cloud-play\n");
     rv = zcs_shutdown();
     return rv;
 }

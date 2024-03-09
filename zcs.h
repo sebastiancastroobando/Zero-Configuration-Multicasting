@@ -12,12 +12,6 @@ typedef void (*zcs_cb_f)(char *, char *);
 #define ZCS_APP_TYPE		1
 #define ZCS_SERVICE_TYPE	2
 
-// We need to know the port number of the ZCS multicast group
-#define ZCS_PORT			14500
-#define ZCS_PORT1			17500
-// #define ZCS_CHANNEL1		"224.1.1.1"
-// #define ZCS_CHANNEL2		"224.1.1.2"
-
 #define MAX_NAME_LEN		64      // max length of a node name
 #define MAX_AD_DURATION		2      // in seconds
 #define MAX_AD_ATTEMPTS		1       // number of attempts to send an ad

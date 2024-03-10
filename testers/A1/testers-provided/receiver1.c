@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     printf("Receivng port: %d\n", rport);
     printf("Send port (nothing sent): %d\n", sport);
 
-    mcast_t *m = multicast_init("244.1.1.1", sport, rport);
+    mcast_t *m = multicast_init("224.1.1.1", sport, rport);
 
     multicast_setup_recv(m);
     while (1) {

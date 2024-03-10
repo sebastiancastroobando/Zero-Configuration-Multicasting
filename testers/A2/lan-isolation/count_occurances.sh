@@ -37,8 +37,12 @@ lanb_serv2_start=$(cat logs/LAN-B_service2_log.txt | grep -c "Starting")
 lanb_serv2_shut=$(cat logs/LAN-B_service2_log.txt | grep -c "Shutting")
 
 # hard check whether LAN-A logs contain LAN-B comms and vice versa
-cat logs/LAN-A* | grep -cl LAN-B
-cat logs/LAN-B* | grep -cl LAN-A
+cat logs/LAN-A* | grep LAN-B
+cat logs/LAN-B* | grep LAN-A
+
+echo "there are $(cat logs/LAN-A_app* | grep -c ninja-blender) + $(cat logs/LAN-A* | grep -c SmartLightBulb) LAN-B occurances in LAN-A"
+
+echo "there are $(cat logs/LAN-B* | grep -c xbox) + $(cat logs/LAN-B* | grep -c chromecast) LAN-A occurances in LAN-B"
 
 # testing LAN-A recv and send ratio
 if [[ $lana_app1_recv -gt $lana_serv1_send ]]; then

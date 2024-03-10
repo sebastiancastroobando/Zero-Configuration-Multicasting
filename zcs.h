@@ -29,7 +29,7 @@ typedef void (*zcs_cb_f)(char *, char *);
 // LAN_B support
 #define LAN_B_CHANNEL1      "224.1.1.3"
 #define LAN_B_CHANNEL2      "224.1.1.4"
-#define LAN_B_PORT          17500
+#define LAN_B_PORT          14500
 
 // Verbose flag
 #define VERBOSE             1      // 1 for verbose, 0 for non-verbose

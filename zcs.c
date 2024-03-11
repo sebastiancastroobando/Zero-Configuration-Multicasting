@@ -9,6 +9,7 @@
 
 #include "multicast.h"
 #include "zcs.h"
+#include "queue.h"
 
 // node object
 typedef struct {

@@ -12,7 +12,7 @@ int main() {
     printf("Starting app1 in LAN-B\n");
     rv = zcs_init(ZCS_APP_TYPE, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     char *names[10];
-    rv = zcs_query("type", "smart-light-bulb", names, 10);
+    rv = zcs_query("type", "service1_LAN-B", names, 10);
 
     if (rv > 0) {
         zcs_attribute_t attrs[5];

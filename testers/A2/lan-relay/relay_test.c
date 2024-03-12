@@ -12,36 +12,37 @@
 // keep running the relay
 static int keep_running = 1;
 
-mcast_t *mcast_LAN1_CHANNEL1_mrecv; // multicast receiver Channel 1 for LAN1
-mcast_t *mcast_LAN1_CHANNEL1_msend; // multicast sender Channel 1 for LAN1
-mcast_t *mcast_LAN1_CHANNEL2_mrecv; // multicast receiver Channel 2 for LAN1
-mcast_t *mcast_LAN1_CHANNEL2_msend; // multicast sender Channel 2 for LAN1
-mcast_t *mcast_LAN2_CHANNEL1_mrecv; // multicast receiver Channel 1 for LAN2
-mcast_t *mcast_LAN2_CHANNEL1_msend; // multicast sender Channel 1 for LAN2
-mcast_t *mcast_LAN2_CHANNEL2_mrecv; // multicast receiver Channel 2 for LAN2
-mcast_t *mcast_LAN2_CHANNEL2_msend; // multicast sender Channel 2 for LAN2
+mcast_t *LAN_A_CHANNEL1_mrecv; // multicast receiver Channel 1 for LAN_A
+mcast_t *LAN_A_CHANNEL1_msend; // multicast sender Channel 1 for LAN_A
+mcast_t *LAN_A_CHANNEL2_mrecv; // multicast receiver Channel 2 for LAN_A
+mcast_t *LAN_A_CHANNEL2_msend; // multicast sender Channel 2 for LAN_A
+mcast_t *LAN_B_CHANNEL1_mrecv; // multicast receiver Channel 1 for LAN_B
+mcast_t *LAN_B_CHANNEL1_msend; // multicast sender Channel 1 for LAN_B
+mcast_t *LAN_B_CHANNEL2_mrecv; // multicast receiver Channel 2 for LAN_B
+mcast_t *LAN_B_CHANNEL2_msend; // multicast sender Channel 2 for LAN_B
 
-// We need four threads to handle the multicast the relay between corresponding channels in LAN1 and LAN2
-pthread_t *LAN1_CHANNEL1_thread;
-pthread_t *LAN1_CHANNEL2_thread;
-pthread_t *LAN2_CHANNEL1_thread;
-pthread_t *LAN2_CHANNEL2_thread;
+// We need four threads to handle the multicast the relay between corresponding channels in LAN_A and LAN_B
+pthread_t *relay1_thread;
+pthread_t *relay2_thread;
+pthread_t *relay3_thread;
+pthread_t *relay4_thread;
 
 // define struct to hold mrecv, msend, and general info
 typedef struct {
+    char* name;
     mcast_t *mrecv;
     mcast_t *msend;
     char *channel_source;
     char *channel_destination;
 } relay_info_t;
 
-relay_info_t *relay_info_LAN1_CHANNEL1;
-relay_info_t *relay_info_LAN1_CHANNEL2;
-relay_info_t *relay_info_LAN2_CHANNEL1;
-relay_info_t *relay_info_LAN2_CHANNEL2;
+relay_info_t *relay1;
+relay_info_t *relay3;
+relay_info_t *relay2;
+relay_info_t *relay4;
 
 /**
- * @brief function to be executed by the thread that relays multicast messages between LAN1 and LAN2
+ * @brief function to be executed by the thread that relays multicast messages between LAN_A and LAN_B
  * @param mrecv multicast receiver object from first LAN
  * @param msend multicast sender object from second LAN
 */
@@ -63,7 +64,7 @@ void *relay_thread(void *arg) {
             }
 
             // First create the message to be concatenated with the received message
-            // ...;relayed:true;transmission:LAN1_CHANNEL1->LAN2_CHANNEL1;
+            // ...;relayed:true;transmission:LAN_A_CHANNEL1->LAN_B_CHANNEL1;
             char *transmission = (char *)malloc(sizeof(char) * 100);
             strcpy(transmission, "relayed:true;transmission:");
             strcat(transmission, relay_info->channel_source);
@@ -76,6 +77,7 @@ void *relay_thread(void *arg) {
             strcat(received_data, transmission);
             if (VERBOSE) {
                 printf("RELAYING\t%s\n", received_data);
+                printf("name: %s src: %s dest: %s\n", relay_info->name, relay_info->channel_source, relay_info->channel_destination);
             }
             
             // send the multicast message, +1 to include the null terminator
@@ -90,8 +92,9 @@ void *relay_thread(void *arg) {
 /**
  * @brief Create struct to hold the multicast receiver and sender objects
 */
-void create_relay_info(relay_info_t **relay_info, mcast_t *mrecv, mcast_t *msend, char *channel_source, char *channel_destination) {
+void create_relay_info(relay_info_t **relay_info, char* name, mcast_t *mrecv, mcast_t *msend, char *channel_source, char *channel_destination) {
     *relay_info = (relay_info_t *)malloc(sizeof(relay_info_t));
+    (*relay_info)->name = name;
     (*relay_info)->mrecv = mrecv;
     (*relay_info)->msend = msend;
     (*relay_info)->channel_source = channel_source;
@@ -99,52 +102,53 @@ void create_relay_info(relay_info_t **relay_info, mcast_t *mrecv, mcast_t *msend
 }
 
 /**
- * @brief Initialize the multicast groups for LAN1 and LAN2
+ * @brief Initialize the multicast groups for LAN_A and LAN_B
 */
-void relay_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *channel1_LAN2, char *channel2_LAN2, int port2_LAN2) {
+void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int port_LAN_A, char *channel1_LAN_B, char *channel2_LAN_B, int port2_LAN_B) {
     /**
      * Ports are mirrored between channels in a given LAN, meaning :
-     * for an APP in LAN1, it would be :
+     * for an APP in LAN_A, it would be :
      * - msend : {channel1, port, port+1}; mrecv: {channel2, port-1, port}. 
-     * and for a SERVICE in LAN1, it would be:
+     * and for a SERVICE in LAN_A, it would be:
      * - msend : {channel2, port, port+1}; mrecv: {channel1, port-1, port}.
     */
     
-    // initialize the multicast groups for LAN1
-    mcast_LAN1_CHANNEL1_mrecv = multicast_init(channel1_LAN1, port_LAN1-1, port_LAN1);
-    mcast_LAN1_CHANNEL1_msend = multicast_init(channel1_LAN1, port_LAN1, port_LAN1+1);
-    mcast_LAN1_CHANNEL2_mrecv = multicast_init(channel2_LAN1, port_LAN1-1, port_LAN1);
-    mcast_LAN1_CHANNEL2_msend = multicast_init(channel2_LAN1, port_LAN1, port_LAN1+1);
+    // initialize the multicast groups for LAN_A
+    LAN_A_CHANNEL1_mrecv = multicast_init(channel1_LAN_A, port_LAN_A-1, port_LAN_A);
+    LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, port_LAN_A, port_LAN_A+1);
+    LAN_A_CHANNEL2_mrecv = multicast_init(channel2_LAN_A, port_LAN_A-3, port_LAN_A-2);
+    LAN_A_CHANNEL2_msend = multicast_init(channel2_LAN_A, port_LAN_A-2, port_LAN_A+3);
 
-    // initialize the multicast groups for LAN2
-    mcast_LAN2_CHANNEL1_mrecv = multicast_init(channel1_LAN2, port2_LAN2-1, port2_LAN2);
-    mcast_LAN2_CHANNEL1_msend = multicast_init(channel1_LAN2, port2_LAN2, port2_LAN2+1);
-    mcast_LAN2_CHANNEL2_mrecv = multicast_init(channel2_LAN2, port2_LAN2-1, port2_LAN2);
-    mcast_LAN2_CHANNEL2_msend = multicast_init(channel2_LAN2, port2_LAN2, port2_LAN2+1);
+    // initialize the multicast groups for LAN_B
+    LAN_B_CHANNEL1_mrecv = multicast_init(channel1_LAN_B, port2_LAN_B-1, port2_LAN_B);
+    LAN_B_CHANNEL1_msend = multicast_init(channel1_LAN_B, port2_LAN_B, port2_LAN_B+1);
+    LAN_B_CHANNEL2_mrecv = multicast_init(channel2_LAN_B, port2_LAN_B-3, port2_LAN_B-2);
+    LAN_B_CHANNEL2_msend = multicast_init(channel2_LAN_B, port2_LAN_B-2, port2_LAN_B+3);
 
     // setup receiver multicast objects
-    multicast_setup_recv(mcast_LAN1_CHANNEL1_mrecv);
-    multicast_setup_recv(mcast_LAN1_CHANNEL2_mrecv);
-    multicast_setup_recv(mcast_LAN2_CHANNEL1_mrecv);
-    multicast_setup_recv(mcast_LAN2_CHANNEL2_mrecv);
+    multicast_setup_recv(LAN_A_CHANNEL1_mrecv);
+    multicast_setup_recv(LAN_A_CHANNEL2_mrecv);
+    multicast_setup_recv(LAN_B_CHANNEL1_mrecv);
+    multicast_setup_recv(LAN_B_CHANNEL2_mrecv);
 
     // create the threads for the relay
-    LAN1_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
-    LAN1_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
-    LAN2_CHANNEL1_thread = (pthread_t *)malloc(sizeof(pthread_t));
-    LAN2_CHANNEL2_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    relay1_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    relay2_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    relay3_thread = (pthread_t *)malloc(sizeof(pthread_t));
+    relay4_thread = (pthread_t *)malloc(sizeof(pthread_t));
 
     // create the relay info structs and assign them to the global variables
-    create_relay_info(&relay_info_LAN1_CHANNEL1, mcast_LAN1_CHANNEL1_mrecv, mcast_LAN2_CHANNEL1_msend, channel1_LAN1, channel1_LAN2);
-    create_relay_info(&relay_info_LAN1_CHANNEL2, mcast_LAN1_CHANNEL2_mrecv, mcast_LAN2_CHANNEL2_msend, channel2_LAN1, channel2_LAN2);
-    create_relay_info(&relay_info_LAN2_CHANNEL1, mcast_LAN2_CHANNEL1_mrecv, mcast_LAN1_CHANNEL1_msend, channel1_LAN2, channel1_LAN1);
-    create_relay_info(&relay_info_LAN2_CHANNEL2, mcast_LAN2_CHANNEL2_mrecv, mcast_LAN1_CHANNEL2_msend, channel2_LAN2, channel2_LAN1);
+    // FORMAT: relay_info ; mrecv ; msend ; channel_source ; channel_destination
+    create_relay_info(&relay1, "relay1", LAN_A_CHANNEL1_mrecv, LAN_B_CHANNEL1_msend, channel1_LAN_A, channel1_LAN_B); // relay #1
+    create_relay_info(&relay3, "relay3", LAN_A_CHANNEL2_mrecv, LAN_B_CHANNEL2_msend, channel2_LAN_A, channel2_LAN_B); // relay #3
+    create_relay_info(&relay2, "relay2", LAN_B_CHANNEL1_mrecv, LAN_A_CHANNEL1_msend, channel1_LAN_B, channel1_LAN_A); // relay #2
+    create_relay_info(&relay4, "relay4", LAN_B_CHANNEL2_mrecv, LAN_A_CHANNEL2_msend, channel2_LAN_B, channel2_LAN_A); // relay #4
     
     // start the relay threads
-    pthread_create(LAN1_CHANNEL1_thread, NULL, relay_thread, (void *)relay_info_LAN1_CHANNEL1);
-    pthread_create(LAN1_CHANNEL2_thread, NULL, relay_thread, (void *)relay_info_LAN1_CHANNEL2);
-    pthread_create(LAN2_CHANNEL1_thread, NULL, relay_thread, (void *)relay_info_LAN2_CHANNEL1);
-    pthread_create(LAN2_CHANNEL2_thread, NULL, relay_thread, (void *)relay_info_LAN2_CHANNEL2);
+    pthread_create(relay1_thread, NULL, &relay_thread, (void *)relay1);
+    pthread_create(relay2_thread, NULL, &relay_thread, (void *)relay2);
+    pthread_create(relay3_thread, NULL, &relay_thread, (void *)relay3);
+    pthread_create(relay4_thread, NULL, &relay_thread, (void *)relay4);
 }
 
 /**
@@ -155,36 +159,41 @@ void shutdown_relay() {
     keep_running = 0;
 
     // wait for the threads to finish
-    pthread_join(*LAN1_CHANNEL1_thread, NULL);
-    pthread_join(*LAN1_CHANNEL2_thread, NULL);
-    pthread_join(*LAN2_CHANNEL1_thread, NULL);
-    pthread_join(*LAN2_CHANNEL2_thread, NULL);
+    pthread_join(*relay1_thread, NULL);
+    pthread_join(*relay2_thread, NULL);
+    pthread_join(*relay3_thread, NULL);
+    pthread_join(*relay4_thread, NULL);
 
     // free the memory allocated for the threads
-    free(LAN1_CHANNEL1_thread);
-    free(LAN1_CHANNEL2_thread);
-    free(LAN2_CHANNEL1_thread);
-    free(LAN2_CHANNEL2_thread);
+    free(relay1_thread);
+    free(relay2_thread);
+    free(relay3_thread);
+    free(relay4_thread);
 
     // free the memory allocated for the relay info structs
-    free(relay_info_LAN1_CHANNEL1);
-    free(relay_info_LAN1_CHANNEL2);
-    free(relay_info_LAN2_CHANNEL1);
-    free(relay_info_LAN2_CHANNEL2);
+    free(relay1);
+    free(relay3);
+    free(relay2);
+    free(relay4);
 
     // destroy the multicast groups
-    multicast_destroy(mcast_LAN1_CHANNEL1_mrecv);
-    multicast_destroy(mcast_LAN1_CHANNEL1_msend);
-    multicast_destroy(mcast_LAN1_CHANNEL2_mrecv);
-    multicast_destroy(mcast_LAN1_CHANNEL2_msend);
+    multicast_destroy(LAN_A_CHANNEL1_mrecv);
+    multicast_destroy(LAN_A_CHANNEL1_msend);
+    multicast_destroy(LAN_A_CHANNEL2_mrecv);
+    multicast_destroy(LAN_A_CHANNEL2_msend);
+
+    multicast_destroy(LAN_B_CHANNEL1_mrecv);
+    multicast_destroy(LAN_B_CHANNEL1_msend);
+    multicast_destroy(LAN_B_CHANNEL2_mrecv);
+    multicast_destroy(LAN_B_CHANNEL2_msend);
 }
 
 /**
- * @brief Relay the multicast messages between LAN1 and LAN2
+ * @brief Relay the multicast messages between LAN_A and LAN_B
  * @todo should this be implemented like a library instead of a main function?
 */
 /*int main() {
-    // initialize the multicast groups for LAN1 and LAN2
+    // initialize the multicast groups for LAN_A and LAN_B
     relay_init("224.1.1.1", "224.1.1.2", 14500, "224.1.1.3", "224.1.1.4", 14500);
     sleep(30); // sleep for 30 seconds
     shutdown_relay(); // shutdown the relay

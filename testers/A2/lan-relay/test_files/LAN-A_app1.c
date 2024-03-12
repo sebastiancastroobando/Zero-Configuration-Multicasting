@@ -19,9 +19,21 @@ int main() {
     relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     char *names[10];
     char *names1[10];
-    rv = zcs_query("type", "chromecast", names, 10);
-    rv = zcs_query("type", "smart-light-bulb", names1, 10);
-    printf("rv after second query is: %d\n", rv);
+    rv = 0;
+    int i = 0;
+    while (!rv) {
+        rv = zcs_query("type", "service1_LAN-A", names, 10);
+        i++;
+    }
+    printf("TRIED FIRST QUERY %d TIMES\n", i);
+    rv = 0;
+    i = 0;
+    while (!rv) {
+        rv = zcs_query("type", "service1_LAN-B", names1, 10);
+        i++;
+    }
+    printf("TRIED SECOND QUERY %d TIMES\n", i);
+    //printf("rv after second query is: %d\n", rv);
     if (rv > 0) {
         zcs_attribute_t attrs[5];
         int anum = 5;
@@ -34,7 +46,7 @@ int main() {
             rv = zcs_listen_ad(names[0], ad_callback);
         }
         if ((strcmp(attrs1[1].attr_name, "location") == 0) && (strcmp(attrs1[1].value, "basement") == 0)) {
-            printf("Listening for ads from [%s] in LAN-A...\n", names1[0]);
+            printf("Listening for ads from [%s] in LAN-B...\n", names1[0]);
             rv = zcs_listen_ad(names1[0], ad_callback1);
         }
         sleep(30);

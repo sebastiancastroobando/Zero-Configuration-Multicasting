@@ -44,7 +44,8 @@ pthread_t *appThread;
 pthread_t *listenAdThread;
 zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
-pthread_mutex_t msend_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for msend and mrecv
+pthread_mutex_t msend_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for msend
+//pthread_mutex_t mrecv_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for mrecv
 volatile int listenToAd = 0; // listenToAd flag to let the app know that it should listen for ads
 
 
@@ -216,8 +217,10 @@ void* init_app(void* arg) {
 	// Poll for incoming messages
 	while(keep_running) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
-			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-			// tokenize by semi-colon
+			pthread_mutex_lock(&msend_mutex);
+            multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
+			pthread_mutex_unlock(&msend_mutex);
+            // tokenize by semi-colon
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
@@ -326,7 +329,9 @@ void* notification(void* arg) {
 		// check for incoming messages
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			// print the check receive value
-			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
+			pthread_mutex_lock(&msend_mutex);
+            multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
+            pthread_mutex_unlock(&msend_mutex);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
 				// print if in verbose mode
 				if (VERBOSE) {
@@ -572,10 +577,10 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
 	// check if there is something to query
-	if (local_reg.num_nodes == 0) {
+	//if (local_reg.num_nodes < 2) {
 		// sleep for a second to allow the app to receive notifications
-		sleep(2);
-	}
+		//sleep(2);
+	//}
 	int cnt = 0;
 	if (local_reg.num_nodes < namelen)
 		namelen = local_reg.num_nodes;

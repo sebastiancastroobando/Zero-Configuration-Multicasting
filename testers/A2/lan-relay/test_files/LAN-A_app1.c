@@ -17,7 +17,7 @@ void ad_callback1(char *s, char *r) {
 int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");
-    rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
+    rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2);
     //relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     char *names[10];
     char *names1[10];

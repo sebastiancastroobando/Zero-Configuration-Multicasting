@@ -582,10 +582,10 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
 	// check if there is something to query
-	//if (local_reg.num_nodes < 2) {
+	if (local_reg.num_nodes == 0) {
 		// sleep for a second to allow the app to receive notifications
-		//sleep(2);
-	//}
+		sleep(1);
+	}
 	int cnt = 0;
 	if (local_reg.num_nodes < namelen)
 		namelen = local_reg.num_nodes;

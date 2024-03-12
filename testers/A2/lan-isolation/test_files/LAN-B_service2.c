@@ -1,10 +1,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "../../../../zcs.h"
+#include "../../../../relay.h"
 
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
+    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT1, LAN_B_PORT2);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "smart-blender"},

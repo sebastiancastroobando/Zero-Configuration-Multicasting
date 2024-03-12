@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "../../../../zcs.h"
+#include "../../../../relay.h"
 
 int main() {
     int rv;

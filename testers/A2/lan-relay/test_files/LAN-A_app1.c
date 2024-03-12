@@ -18,7 +18,7 @@ int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");
     rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
-    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
+    //relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     char *names[10];
     char *names1[10];
     rv = 0;
@@ -56,7 +56,7 @@ int main() {
         sleep(30);
     }
     printf("Shutting down app1 in LAN-A\n");
-    shutdown_relay();
+    //shutdown_relay();
     zcs_shutdown();
 
 }

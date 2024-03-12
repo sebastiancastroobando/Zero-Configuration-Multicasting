@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "../../../multicast.h"
+#include "../../../relay.h"
 
 #define MAX_MSG_SIZE 1000       // maximum size of the multicast message to be relayed
 #define VERBOSE 1               // 1 for verbose, 0 for non-verbose
@@ -60,6 +61,7 @@ void *relay_thread(void *arg) {
 
             // check if the received message is already relayed
             if (strstr(received_data, "relayed:true") != NULL) {
+                printf("IN RELAY\n");
                 continue; // if the message is already relayed, then skip it
             }
 
@@ -192,11 +194,11 @@ void shutdown_relay() {
  * @brief Relay the multicast messages between LAN_A and LAN_B
  * @todo should this be implemented like a library instead of a main function?
 */
-/*int main() {
+int main() {
     // initialize the multicast groups for LAN_A and LAN_B
-    relay_init("224.1.1.1", "224.1.1.2", 14500, "224.1.1.3", "224.1.1.4", 14500);
+    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     sleep(30); // sleep for 30 seconds
     shutdown_relay(); // shutdown the relay
 
     return 0;
-}*/
+}

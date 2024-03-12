@@ -54,9 +54,11 @@ void *relay_thread(void *arg) {
 
     char received_data[MAX_MSG_SIZE];
 
+    printf("before while\n");
     // receive the multicast message
     while(keep_running) {
         if (multicast_check_receive(relay_info->mrecv) > 0) {
+            printf("received msg\n");
             multicast_receive(relay_info->mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
 
             // check if the received message is already relayed
@@ -117,7 +119,7 @@ void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int LAN_A_port1, int
     
     // initialize the multicast groups for LAN_A
     LAN_A_CHANNEL1_mrecv = multicast_init(channel1_LAN_A, LAN_A_port1-1, LAN_A_port1);
-    LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, LAB_A_port1, LAN_A_port1+1);
+    LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, LAN_A_port1, LAN_A_port1+1);
     LAN_A_CHANNEL2_mrecv = multicast_init(channel2_LAN_A, LAN_A_port2-1, LAN_A_port2);
     LAN_A_CHANNEL2_msend = multicast_init(channel2_LAN_A, LAN_A_port2, LAN_A_port2+1);
 
@@ -196,7 +198,7 @@ void shutdown_relay() {
 */
 int main() {
     // initialize the multicast groups for LAN_A and LAN_B
-    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
+    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT1, LAN_B_PORT2);
     sleep(30); // sleep for 30 seconds
     shutdown_relay(); // shutdown the relay
 

@@ -12,7 +12,7 @@
 #define LAN_B_PORT1         17500
 #define LAN_B_PORT2         18500
 
-void relay_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *channel1_LAN2, char *channel2_LAN2, int port2_LAN2);
+void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int LAN_A_port1, int LAN_A_port2, char *channel1_LAN_B, char *channel2_LAN_B, int LAN_B_port1, int LAN_B_port2);
 void shutdown_relay();
 
 #endif

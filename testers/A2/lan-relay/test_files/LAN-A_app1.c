@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
 #include "../../../../zcs.h"
 #include "../../../../relay.h"
 
@@ -20,19 +22,21 @@ int main() {
     char *names[10];
     char *names1[10];
     rv = 0;
-    int i = 0;
+    clock_t start = clock();
     while (!rv) {
         rv = zcs_query("type", "service1_LAN-A", names, 10);
-        i++;
     }
-    printf("TRIED FIRST QUERY %d TIMES\n", i);
+    clock_t end = clock();
+    double time = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("TRIED FIRST QUERY FOR %.2f SECONDS\n", time);
     rv = 0;
-    i = 0;
+    start = clock();
     while (!rv) {
         rv = zcs_query("type", "service1_LAN-B", names1, 10);
-        i++;
     }
-    printf("TRIED SECOND QUERY %d TIMES\n", i);
+    end = clock();
+    time = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("TRIED SECOND QUERY FOR %d SECONDS\n", time);
     //printf("rv after second query is: %d\n", rv);
     if (rv > 0) {
         zcs_attribute_t attrs[5];

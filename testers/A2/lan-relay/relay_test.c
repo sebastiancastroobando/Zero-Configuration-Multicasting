@@ -54,16 +54,13 @@ void *relay_thread(void *arg) {
 
     char received_data[MAX_MSG_SIZE];
 
-    printf("before while\n");
     // receive the multicast message
     while(keep_running) {
         if (multicast_check_receive(relay_info->mrecv) > 0) {
-            printf("received msg\n");
             multicast_receive(relay_info->mrecv, received_data, MAX_MSG_SIZE); // receive the multicast message
 
             // check if the received message is already relayed
             if (strstr(received_data, "relayed:true") != NULL) {
-                printf("IN RELAY\n");
                 continue; // if the message is already relayed, then skip it
             }
 
@@ -81,7 +78,6 @@ void *relay_thread(void *arg) {
             strcat(received_data, transmission);
             if (VERBOSE) {
                 printf("RELAYING\t%s\n", received_data);
-                printf("name: %s src: %s dest: %s\n", relay_info->name, relay_info->channel_source, relay_info->channel_destination);
             }
             
             // send the multicast message, +1 to include the null terminator

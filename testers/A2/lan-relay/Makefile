@@ -1,7 +1,7 @@
 # Makefile for step1 of testers-a2
 CC = gcc
 
-LIBRARY_PATH = ../../../
+LIBRARY_PATH = ../code/
 TESTFILE_PATH = ./test_files/
 DEPS = $(LIBRARY_PATH)zcs.c $(LIBRARY_PATH)multicast.c
 

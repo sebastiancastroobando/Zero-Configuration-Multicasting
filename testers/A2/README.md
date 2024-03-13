@@ -9,7 +9,7 @@
 From a high level, we built the relay by connecting each channel of each LAN to their corresponding channel in the other LAN. In our case, we had 2 channels in each LAN, which meant we needed 4 *relay connections* as illustrated below.
 ![Relay scheme](./relay_scheme4.png)
 
-In addition to creating makefiles, we wrote shell scriptsrun the code. All the outputs of the runs are sent to log directories corresponding to the tests. 
+In addition to creating makefiles, we wrote shell scripts to run the code. All the outputs of the runs are sent to log directories corresponding to the tests. 
 
 ## How to run the tests
 Firstly, if you wish to run all the test cases with one command, you may execute the script `./run.sh` which will run both the `lan-isolation` and `lan-relay` tests in the background. All the interactions between the apps and sevices in both isolation and relay cases will be logged in `isolation_logs` and `relay_logs` directories respectively in the current directory. 

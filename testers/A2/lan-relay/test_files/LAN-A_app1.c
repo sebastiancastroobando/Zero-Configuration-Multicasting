@@ -17,26 +17,26 @@ void ad_callback1(char *s, char *r) {
 int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");
-    rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
+    rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2);
     //relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
     char *names[10];
     char *names1[10];
     rv = 0;
-    clock_t start = clock();
-    while (!rv) {
-        rv = zcs_query("type", "service1_LAN-A", names, 10);
-    }
-    clock_t end = clock();
-    double time = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("TRIED FIRST QUERY FOR %.2f SECONDS\n", time);
-    rv = 0;
-    start = clock();
-    while (!rv) {
-        rv = zcs_query("type", "service1_LAN-B", names1, 10);
-    }
-    end = clock();
-    time = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("TRIED SECOND QUERY FOR %d SECONDS\n", time);
+    //clock_t start = clock();
+    //while (!rv) {
+    rv = zcs_query("type", "service1_LAN-A", names, 10);
+    //}
+    //clock_t end = clock();
+    //double time = (double)(end - start) / CLOCKS_PER_SEC;
+    //printf("TRIED FIRST QUERY FOR %.2f SECONDS\n", time);
+    //rv = 0;
+    //start = clock();
+    //while (!rv) {
+    rv = zcs_query("type", "service1_LAN-B", names1, 10);
+    //}
+    //end = clock();
+    //time = (double)(end - start) / CLOCKS_PER_SEC;
+    //printf("TRIED SECOND QUERY FOR %d SECONDS\n", time);
     //printf("rv after second query is: %d\n", rv);
     if (rv > 0) {
         zcs_attribute_t attrs[5];

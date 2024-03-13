@@ -61,7 +61,6 @@ void *relay_thread(void *arg) {
 
             // check if the received message is already relayed
             if (strstr(received_data, "relayed:true") != NULL) {
-                printf("IN RELAY\n");
                 continue; // if the message is already relayed, then skip it
             }
 
@@ -79,7 +78,6 @@ void *relay_thread(void *arg) {
             strcat(received_data, transmission);
             if (VERBOSE) {
                 printf("RELAYING\t%s\n", received_data);
-                printf("name: %s src: %s dest: %s\n", relay_info->name, relay_info->channel_source, relay_info->channel_destination);
             }
             
             // send the multicast message, +1 to include the null terminator
@@ -106,7 +104,7 @@ void create_relay_info(relay_info_t **relay_info, char* name, mcast_t *mrecv, mc
 /**
  * @brief Initialize the multicast groups for LAN_A and LAN_B
 */
-void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int port_LAN_A, char *channel1_LAN_B, char *channel2_LAN_B, int port2_LAN_B) {
+void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int LAN_A_port1, int LAN_A_port2, char *channel1_LAN_B, char *channel2_LAN_B, int LAN_B_port1, int LAN_B_port2) {
     /**
      * Ports are mirrored between channels in a given LAN, meaning :
      * for an APP in LAN_A, it would be :
@@ -116,16 +114,16 @@ void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int port_LAN_A, char
     */
     
     // initialize the multicast groups for LAN_A
-    LAN_A_CHANNEL1_mrecv = multicast_init(channel1_LAN_A, port_LAN_A-1, port_LAN_A);
-    LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, port_LAN_A, port_LAN_A+1);
-    LAN_A_CHANNEL2_mrecv = multicast_init(channel2_LAN_A, port_LAN_A-3, port_LAN_A-2);
-    LAN_A_CHANNEL2_msend = multicast_init(channel2_LAN_A, port_LAN_A-2, port_LAN_A+3);
+    LAN_A_CHANNEL1_mrecv = multicast_init(channel1_LAN_A, LAN_A_port1-1, LAN_A_port1); // relay #1 recv
+    LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, LAN_A_port1, LAN_A_port1+1); // relay #2 send
+    LAN_A_CHANNEL2_mrecv = multicast_init(channel2_LAN_A, LAN_A_port2-1, LAN_A_port2); // relay #3 recv
+    LAN_A_CHANNEL2_msend = multicast_init(channel2_LAN_A, LAN_A_port2, LAN_A_port2+1); // relay #4 send
 
     // initialize the multicast groups for LAN_B
-    LAN_B_CHANNEL1_mrecv = multicast_init(channel1_LAN_B, port2_LAN_B-1, port2_LAN_B);
-    LAN_B_CHANNEL1_msend = multicast_init(channel1_LAN_B, port2_LAN_B, port2_LAN_B+1);
-    LAN_B_CHANNEL2_mrecv = multicast_init(channel2_LAN_B, port2_LAN_B-3, port2_LAN_B-2);
-    LAN_B_CHANNEL2_msend = multicast_init(channel2_LAN_B, port2_LAN_B-2, port2_LAN_B+3);
+    LAN_B_CHANNEL1_mrecv = multicast_init(channel1_LAN_B, LAN_B_port1-1, LAN_B_port1); // relay #2 recv
+    LAN_B_CHANNEL1_msend = multicast_init(channel1_LAN_B, LAN_B_port1, LAN_B_port1+1); // relay #1 send
+    LAN_B_CHANNEL2_mrecv = multicast_init(channel2_LAN_B, LAN_B_port2-1, LAN_B_port2); // relay #4 recv
+    LAN_B_CHANNEL2_msend = multicast_init(channel2_LAN_B, LAN_B_port2, LAN_B_port2+1); // relay #3 send
 
     // setup receiver multicast objects
     multicast_setup_recv(LAN_A_CHANNEL1_mrecv);
@@ -196,7 +194,7 @@ void shutdown_relay() {
 */
 int main() {
     // initialize the multicast groups for LAN_A and LAN_B
-    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT);
+    relay_init(LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2, LAN_B_CHANNEL1, LAN_B_CHANNEL2, LAN_B_PORT1, LAN_B_PORT2);
     sleep(30); // sleep for 30 seconds
     shutdown_relay(); // shutdown the relay
 

@@ -5,7 +5,7 @@
 
 int main() {
     int rv;
-    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT);
+    rv = zcs_init(ZCS_SERVICE_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2);
     zcs_attribute_t attribs[] = 
     {
         { .attr_name = "type", .value = "service1_LAN-A"},

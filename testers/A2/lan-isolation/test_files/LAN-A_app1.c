@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "../../../../zcs.h"
 #include "../../../../relay.h"
 
@@ -8,13 +9,16 @@ void ad_callback(char *s, char *r) {
     printf("Received ad in LAN-A! Ad received: %s, with value: %s\n", s, r);
 }
 
+void ad_callback1(char *s, char *r) {
+    printf("Received ad in LAN-A! %s, with value: %s\n", s, r);
+}
+
 int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");
     rv = zcs_init(ZCS_APP_TYPE, LAN_A_CHANNEL1, LAN_A_CHANNEL2, LAN_A_PORT1, LAN_A_PORT2);
     char *names[10];
-    rv = zcs_query("type", "chromecast", names, 10);
-
+    rv = zcs_query("type", "service1_LAN-A", names, 10);
     if (rv > 0) {
         zcs_attribute_t attrs[5];
         int anum = 5;

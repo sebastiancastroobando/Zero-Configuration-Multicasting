@@ -54,7 +54,8 @@ void *relay_thread(void *arg) {
 
     char received_data[MAX_MSG_SIZE];
 
-    printf("before while\n");
+    // print args to test
+    printf("name: %s src: %s dest: %s\n", relay_info->name, relay_info->channel_source, relay_info->channel_destination);
     // receive the multicast message
     while(keep_running) {
         if (multicast_check_receive(relay_info->mrecv) > 0) {
@@ -118,6 +119,7 @@ void relay_init(char *channel1_LAN_A, char *channel2_LAN_A, int LAN_A_port1, int
     */
     
     // initialize the multicast groups for LAN_A
+    // print for debugging
     LAN_A_CHANNEL1_mrecv = multicast_init(channel1_LAN_A, LAN_A_port1-1, LAN_A_port1);
     LAN_A_CHANNEL1_msend = multicast_init(channel1_LAN_A, LAN_A_port1, LAN_A_port1+1);
     LAN_A_CHANNEL2_mrecv = multicast_init(channel2_LAN_A, LAN_A_port2-1, LAN_A_port2);

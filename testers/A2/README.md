@@ -62,4 +62,4 @@ This poses a memory limitation, as we need to create many multicast objects for 
 **Answer:** As we outline in the previous question, we are essentially relying in creating 2 multicast objects for each channel. The very first improvement of our design would need to be to find a way to connect the LANs without this object creation. Perhaps, 
 
 ## Contribution Disclosure
-Each author has contributed equally to this assignment. 
+Each author has contributed equally to this assignment.

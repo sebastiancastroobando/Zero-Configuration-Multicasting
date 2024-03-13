@@ -5,7 +5,7 @@ LIBRARY_PATH = ../../../
 TESTFILE_PATH = ./test_files/
 DEPS = $(LIBRARY_PATH)zcs.c $(LIBRARY_PATH)multicast.c
 
-RELAY = $(DEPS) relay_test.c
+RELAY = $(DEPS) $(LIBRARY_PATH)relay.c
 LAN-A_APP1 = $(DEPS) $(TESTFILE_PATH)LAN-A_app1.c
 LAN-A_APP2 = $(DEPS) $(TESTFILE_PATH)LAN-A_app2.c
 LAN-A_SERVICE1 = $(DEPS) $(TESTFILE_PATH)LAN-A_service1.c

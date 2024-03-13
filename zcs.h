@@ -21,10 +21,11 @@ typedef void (*zcs_cb_f)(char *, char *);
 #define MAX_MSG_SIZE		20      // max number of {attr_name, value} pairs
 #define LOG_SIZE			6		// max number of log entries per node (UP/DOWN)
 
+
 // Verbose flag
 #define VERBOSE             1      // 1 for verbose, 0 for non-verbose
 
-int zcs_init(int type, char *channel1, char *channel2, int port);
+int zcs_init(int type, char *channel1, char *channel2, int port1, int port2);
 int zcs_start(char *name, zcs_attribute_t attr[], int num);
 int zcs_post_ad(char *ad_name, char *ad_value);
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen);

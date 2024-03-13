@@ -101,7 +101,7 @@ void create_relay_info(relay_info_t **relay_info, mcast_t *mrecv, mcast_t *msend
 /**
  * @brief Initialize the multicast groups for LAN1 and LAN2
 */
-void reley_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *channel1_LAN2, char *channel2_LAN2, int port2_LAN2) {
+void relay_init(char *channel1_LAN1, char *channel2_LAN1, int port_LAN1, char *channel1_LAN2, char *channel2_LAN2, int port2_LAN2) {
     /**
      * Ports are mirrored between channels in a given LAN, meaning :
      * for an APP in LAN1, it would be :
@@ -185,7 +185,7 @@ void shutdown_relay() {
 */
 int main() {
     // initialize the multicast groups for LAN1 and LAN2
-    reley_init("224.1.1.1", "224.1.1.2", 14500, "224.1.1.3", "224.1.1.4", 14500);
+    relay_init("224.1.1.1", "224.1.1.2", 14500, "224.1.1.3", "224.1.1.4", 14500);
     sleep(30); // sleep for 30 seconds
     shutdown_relay(); // shutdown the relay
 

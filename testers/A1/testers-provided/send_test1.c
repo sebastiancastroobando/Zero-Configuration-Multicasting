@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     printf("Receiving port: %d\n", myport);
     char *msg = argv[2];
 
-    mcast_t *m = multicast_init("224.1.1.1", sport, myport);
+    mcast_t *m = multicast_init("224.1.1.2", sport, myport);
 
     while (1) {
         sleep(1);

@@ -9,6 +9,7 @@
 
 #include "multicast.h"
 #include "zcs.h"
+#include "queue.h"
 
 // node object
 typedef struct {
@@ -43,7 +44,8 @@ pthread_t *appThread;
 pthread_t *listenAdThread;
 zcs_thread_args *ad_args;
 zcs_reg_t local_reg;
-pthread_mutex_t msend_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for msend and mrecv
+pthread_mutex_t msend_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for msend
+//pthread_mutex_t mrecv_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex for mrecv
 volatile int listenToAd = 0; // listenToAd flag to let the app know that it should listen for ads
 
 
@@ -215,8 +217,10 @@ void* init_app(void* arg) {
 	// Poll for incoming messages
 	while(keep_running) {
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
-			multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
-			// tokenize by semi-colon
+			pthread_mutex_lock(&msend_mutex);
+            multicast_receive(zcs_node.mrecv, discovery_buffer, BUF_SIZE);
+			pthread_mutex_unlock(&msend_mutex);
+            // tokenize by semi-colon
 			token = strtok(discovery_buffer, ";");
 			dsize = 0;
 			while (token != NULL) {
@@ -231,7 +235,7 @@ void* init_app(void* arg) {
 				token = strtok(NULL, ";");
 			}
 
-			if (memcmp(received_data[0], "msgType:NOTIFICATION", sizeof("msgType:NOTIFICATION") + sizeof(char)) == 0) {
+			if (strcmp(received_data[0], "msgType:NOTIFICATION") == 0) {
 				// FORMAT: "msgType:NOTIFICATION;nodeName:node_name;attr1:val1;attr2:val2;attr3:val3..."
 				// if we receive a notification, check if we have already received it
 				char *copy = (char*) malloc(strlen(received_data[1]) + 1);
@@ -255,7 +259,7 @@ void* init_app(void* arg) {
 				// make a registry entry
 				make_reg_entry(received_data, dsize);
 			} 
-			else if (memcmp(received_data[0], "msgType:HEARTBEAT", sizeof("msgType:HEARTBEAT") + sizeof(char)) == 0) {
+			else if (strcmp(received_data[0], "msgType:HEARTBEAT") == 0) {
 				// FORMAT: "msgType:HEARTBEAT;nodeName:node_name"
 				// the message is a heartbeat, we need to parse it
 				split_key_value(received_data[1], &key, &value);
@@ -270,7 +274,7 @@ void* init_app(void* arg) {
 					add_log(local_reg.nodes[index]);
 				}
 			}
-			else if (memcmp(received_data[0], "msgType:AD", sizeof("msgType:AD") + sizeof(char)) == 0 && listenToAd == 1) {
+			else if (listenToAd == 1 && strcmp(received_data[0], "msgType:AD") == 0) {
 				// FORMAT: "msgType:AD;nodeName:node_name;adName:ad_name;adValue:ad_value"
 				// the message is an ad, we need to check if nodeName matches the name we are listening to
 				// if not, ignore the message
@@ -325,7 +329,9 @@ void* notification(void* arg) {
 		// check for incoming messages
 		if (multicast_check_receive(zcs_node.mrecv) > 0) {
 			// print the check receive value
-			multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
+			pthread_mutex_lock(&msend_mutex);
+            multicast_receive(zcs_node.mrecv, buffer, BUF_SIZE);
+            pthread_mutex_unlock(&msend_mutex);
 			if (strstr(buffer, "msgType:DISCOVERY;") != NULL) {
 				// print if in verbose mode
 				if (VERBOSE) {
@@ -376,16 +382,21 @@ void* heartbeat(void* arg) {
  * @
  * @return 0 on success, -1 on failure
 */
-int zcs_init(int type, char *channel1, char *channel2, int port) {
+int zcs_init(int type, char *channel1, char *channel2, int port1, int port2) {
     // Initialize multicast groups
 	// send_channel and recv_channel should be char* and not int
 	char *send_channel, *recv_channel;
+	int send_port, recv_port;
 	if (type == ZCS_APP_TYPE) {
 		send_channel = channel1;
 		recv_channel = channel2;
+		send_port = port1;
+		recv_port = port2;
 	} else if (type == ZCS_SERVICE_TYPE) {
 		send_channel = channel2;
 		recv_channel = channel1;
+		send_port = port2;
+		recv_port = port1;
 	}
 	// specify that there are no nodes in local registry
 	local_reg.num_nodes = 0;
@@ -393,8 +404,8 @@ int zcs_init(int type, char *channel1, char *channel2, int port) {
 	// create the multicast objects, one for sending and one for receiving
 	// For sending, only the destination port is needed
 	// For receiving, only the source port is needed
-    mcast_t *msend = multicast_init(send_channel, port, port + 1);
-	mcast_t *mrecv = multicast_init(recv_channel, port - 1, port);
+    mcast_t *msend = multicast_init(send_channel, send_port, send_port + 1);
+	mcast_t *mrecv = multicast_init(recv_channel, recv_port + 1, recv_port);
 
 	// check if the multicast objects were created successfully
 	if (!msend || !mrecv) {
@@ -571,9 +582,9 @@ int zcs_listen_ad(char *name, zcs_cb_f cback) {
 */
 int zcs_query(char *attr_name, char *attr_value, char *node_names[], int namelen) {
 	// check if there is something to query
-	if (local_reg.num_nodes == 0) {
+	if (local_reg.num_nodes < 2) {
 		// sleep for a second to allow the app to receive notifications
-		sleep(2);
+		sleep(1);
 	}
 	int cnt = 0;
 	if (local_reg.num_nodes < namelen)

@@ -8,6 +8,10 @@ if [ ! -d "logs" ]; then
     mkdir logs
 fi
 
+# Delete old log files
+rm -f logs/*
+
+./relay > logs/relay_log.txt 2>&1 &
 # Run the applications in the background and redirect their output to log files
 ./LAN-A_service1 > logs/LAN-A_service1_log.txt 2>&1 &
 ./LAN-A_service2 > logs/LAN-A_service2_log.txt 2>&1 &
@@ -21,7 +25,7 @@ fi
 # Wait for all background jobs to finish
 wait
 
-./count_occurances.sh
+#./count_occurances.sh
 
 # Remove the executables
 make clean

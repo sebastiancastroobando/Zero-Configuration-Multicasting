@@ -12,12 +12,12 @@ From a high level, we built the relay by connecting each channel of each LAN to 
 In addition to creating makefiles, we wrote shell scripts to run the code. All the outputs of the runs are sent to log directories corresponding to the tests. 
 
 ## How to run the tests
-Firstly, if you wish to run all the test cases with one command, you may execute the script `./run.sh` which will run both the `lan-isolation` and `lan-relay` tests in the background. All the interactions between the apps and sevices in both isolation and relay cases will be logged in `isolation_logs` and `relay_logs` directories respectively in the current directory. 
+If you wish to run all the test cases with one command, you may execute the script `./run.sh` which will run both the `lan-isolation` and `lan-relay` tests in the background. All the interactions between the apps and sevices in both isolation and relay cases will be logged in `isolation_logs` and `relay_logs` directories respectively in the current directory. 
 ```bash
 ./run.sh
 ```
 
-Secondly, if you wish to run the tests separetely, you may go to the test directory (i.e. `lan-isolation` and `lan-relay`) and run the shell script starting the keyword `demo` (i.e. `demo-part1.sh` and `demo-part2.sh`). For example,
+If you wish to run the tests separetely, you may go to the test directory (i.e. `lan-isolation` and `lan-relay`) and run the shell script starting the keyword `demo` (i.e. `demo-part1.sh` and `demo-part2.sh`). For example,
 
 ```bash
 cd lan-isolation
@@ -35,17 +35,17 @@ cd ./logs/
 # analyse the logs
 ```
 
-Finally, if you wish to run the tests manually, you may compile the code and run the executables as you see fit. To do so, go to the testing directories and run the makefile. For example,
+If you wish to run the tests manually, you may compile the code and run the executables in the other you want. To do so, go to the testing directories and run the makefile. For example,
 ```bash
 cd lan-isolation
 make
-# then run apps or services as you see fit
+# then run apps or services as you wish
 ```
 or
 ```bash
 cd lan-relay
 make
-# then run apps or services as you see fit
+# then run apps or services as you wish
 ```
 
 *We did not use Docker, because in the assignment description we read : "Get LAN-A and LAN-B running on the same machine or Docker containers".*
@@ -70,9 +70,9 @@ To show LAN isolation, we created two apps and two services in two different LAN
 Test files are located in ./lan-isolation/test_files/
 
 ### What is expected?
-- app# listens to ads from service# in each respective LAN
-- Within the LAN apps will receive heartbeats and notifications from services and services will receive discoveries from apps
-- No LAN-A heartbeats/notifications/ads/discoveries will be in LAN-B and vice versa
+- Within the a LAN, apps will receive heartbeats and notifications from services and services will receive discoveries from apps.
+- No LAN-A heartbeats/notifications/discoveries will be in LAN-B and vice versa.
+- Apps will listen to ads from services in their respective LANs. Hence, no ads from LAN-A will be received in LAN-B and vice versa.
 
 ## Part 2 : LAN Relay
 ### Test Setup
@@ -87,11 +87,6 @@ Test files are located in ./lan-relay/test_files/
 
 ## Questions 
 1. **Question:** Suppose you are asked to extend the relay to work with more than 2 LANs, what is the major issue to be solved? <br> **Answer:** Our implementation of the relay works by connecting the multicast channels of each LAN to their counter part on the other LAN. For example, if an app sends a discovery in channel1 of LAN-A, then the relay will forward this message to the channel1 of LAN-B. And vice versa for an app in LAN-B. As you may notice, the relay needs to have a receiver and a sender for each channel in each LAN it connects. For this assignment, we were asked to connect 2 LANs, so we needed 8 multicast objects (4 senders and 4 receivers). 
-
-
-(from Denis: I don't think that the memory is much of an issue tbh) and is not scalable. 
-(From seb: I think you are right, memory should not be an issue.)
-
 
 2. **Question:** How would you improve your design? <br> **Answer:** As we outline in the previous question, we are essentially relying in creating 2 multicast objects for each channel. The very first improvement of our design would need to be to find a way to connect the LANs without this object creation.
 (Denis) I think that we could just chain relays. Keep a reference of the LANS that are already relayed. If we want to connect another LAN, take the last relayed LAN from the reference table, and relay_init with its meta-data and the new LAN. Our implementation would need a little tweaking, but the logic would stay the same.

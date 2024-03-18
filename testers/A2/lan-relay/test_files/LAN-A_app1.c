@@ -9,10 +9,6 @@ void ad_callback(char *s, char *r) {
     printf("Received ad in LAN-A! Ad received: %s, with value: %s\n", s, r);
 }
 
-void ad_callback1(char *s, char *r) {
-    printf("Received ad in LAN-A! %s, with value: %s\n", s, r);
-}
-
 int main() {
     int rv;
     printf("Starting app1 in LAN-A\n");

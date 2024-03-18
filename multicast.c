@@ -17,7 +17,7 @@ mcast_t *multicast_init(char *mcast_addr, int sport, int rport)
         exit(1);
     }
     int optval = 1;
-    //setsockopt(m->sock, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    setsockopt(m->sock, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
     setsockopt(m->sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     bzero((char *)&(m->addr), sizeof(m->addr));

@@ -4,9 +4,3 @@ This is a project for the course [Computer Networks (COMP 535)](https://www.mcgi
 ### Authors
 - [Denis Aleksandrov](https://github.com/aleksandrov-denis)
 - [Sebastian Castro Obando](https://github.com/sebastiancastroobando/)
-
-### Description
-Todo later...
-
-### Usage
-Add functions here... (let's do this later when we have time).
